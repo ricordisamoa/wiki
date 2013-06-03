@@ -3,7 +3,7 @@ Large dictionary of Wikidata item IDs for Wikipedia language versions
 (not sure if it can be copyrighted)
 """
 languages={
-  'ar' : 199700,
+	'ar' : 199700,
 	'ceb': 837615,
 	'da' : 181163,
 	'de' : 48183,
