@@ -33,21 +33,44 @@ optin = [x.group('name') for x in user_regex.finditer(optin)]
 regex = re.compile('== \[\[(?P<qid>Q\d*?)\]\] ==(?P<text>.*?)((?===)|$)', flags=re.DOTALL)
 page = pywikibot.Page(site, 'Wikidata:Requests for deletions')
 text = oldtext = page.get(force=True)
-count = 0
+marked_list = []
 x = list(regex.finditer(text))
 for m in x:
-    q = pywikibot.Page(site, m.group('qid'))
+    q = pywikibot.ItemPage(site, m.group('qid'))
     print q
-    if (not 'done}}' in m.group('text').lower() and not '{{deleted' in m.group('text').lower()) and (not q.exists()):
+    if (not 'done}}' in m.group('text').lower() and not '{{deleted' in m.group('text').lower()):
         t = m.group()
-        by = list(q.site.logevents(logtype='delete',page=q))[0].user()
+        deleted = None
+        if (not q.exists()):
+            deleted = q
+        elif q.exists() and len(list(q.site.logevents(logtype='delete',page=q)))==0:
+            search = re.search(ur'([Dd]ouble with|\=|[Dd]uplicate of|([Dd]uplicate of ?\/ ?)?[Mm]erged (to|into|with)) ?\:? \[\[(?P<qid>[Qq]\d+)\]\]',m.group())
+            if search:
+                deleted = pywikibot.ItemPage(site,search.group('qid'))
+        if not deleted:
+            print 'no deleted item found, skipping'
+            continue
+        if deleted and deleted.exists():
+            print 'the item still exists, skipping'
+            continue
+        deleted_log = list(deleted.site.logevents(logtype='delete',page=deleted))
+        if len(deleted_log)!=1:
+            print 'deletion log for %s contains %d entries, skipping'%(deleted.getID(),len(deleted_log))
+            continue
+        by = deleted_log[0].user()
         if by in optin:
-            print 'deleted by %s'%by
-            t = re.sub(ur'\n+$','',t)+'\n:{{deleted|admin=%s}} --~~~~\n'%by
+            addition = ('{{deleted|admin=%s}}' if deleted.getID() == q.getID() else '{{deleted}} the other one by {{user|%s}}')%by
+            print addition
+            t = re.sub(ur'\n+$','',t) + '\n:' + addition + ' --~~~~\n'
             text = text.replace(m.group(), t)
-            count+=1
+            marked_list.append(deleted.getID())
         else:
             print '%s has not opted-in, skipping'%by
-pywikibot.showDiff(oldtext, text)
-
-page.put(text, pywikibot.i18n.translate('en','Bot: marking %(count)d request{{PLURAL:%(count)d||s}} as deleted',{'count':count}), minorEdit=True, botflag=True)
+if len(marked_list)>0:
+    summary = 'Bot: marking %(count)d request{{PLURAL:%(count)d||s}} as deleted'
+    if len(marked_list)==1:
+        summary = '/* %s */ '%marked_list[0].upper() + summary
+    pywikibot.showDiff(oldtext, text)
+    page.put(text, pywikibot.i18n.translate('en',summary,{'count':len(marked_list)}), minorEdit=True, botflag=True)
+else:
+    print 'no requests to be marked!'
