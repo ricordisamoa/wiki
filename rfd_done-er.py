@@ -44,7 +44,7 @@ for m in x:
         if (not q.exists()):
             deleted = q
         elif q.exists() and len(list(q.site.logevents(logtype='delete',page=q)))==0:
-            search = re.search(ur'([Dd]ouble with|\=|[Dd]uplicate of|([Dd]uplicate of ?\/ ?)?[Mm]erged (to|into|with)) ?\:? \[\[(?P<qid>[Qq]\d+)\]\]',m.group())
+            search = re.search(ur'([Dd]ouble with|[Dd]uplicate of|[Mm]erged (to|into|with)) \[\[(?P<qid>[Qq]\d+)\]\]',m.group())
             if search:
                 deleted = pywikibot.ItemPage(site,search.group('qid'))
         if not deleted:
@@ -63,7 +63,7 @@ for m in x:
             print addition
             t = re.sub(ur'\n+$','',t) + '\n:' + addition + ' --~~~~\n'
             text = text.replace(m.group(), t)
-            marked_list.append(deleted.getID())
+            marked_list.append(q.getID())
         else:
             print '%s has not opted-in, skipping'%by
 if len(marked_list)>0:
