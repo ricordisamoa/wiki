@@ -23,7 +23,7 @@ IN THE SOFTWARE.
 import pywikibot
 import re
 pywikibot.handleArgs()
-site = pywikibot.Site('wikidata','wikidata')
+site = pywikibot.Site('wikidata','wikidata').data_repository()
 site.login()
 
 optin = pywikibot.Page(site,'User:BeneBot*/RfD-optin#List').get(force=True)
