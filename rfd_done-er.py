@@ -38,7 +38,7 @@ x = list(regex.finditer(text))
 for m in x:
     q = pywikibot.ItemPage(site, m.group('qid'))
     print q
-    if (not 'done}}' in m.group('text').lower() and not '{{deleted' in m.group('text').lower()):
+    if (not '{{done' in m.group('text').lower() and not '{{deleted' in m.group('text').lower()):
         t = m.group()
         deleted = None
         if (not q.exists()):
