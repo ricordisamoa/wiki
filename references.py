@@ -4,6 +4,7 @@ Large dictionary of Wikidata item IDs for Wikipedia language versions
 """
 languages={
 	'ar' : 199700,
+	'ca' : 199693,
 	'ceb': 837615,
 	'da' : 181163,
 	'de' : 48183,
