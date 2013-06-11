@@ -4,7 +4,7 @@ import pywikibot
 
 commons=pywikibot.Site('commons','commons')
 en=pywikibot.Site('en','wikipedia')
-it=pywikibot.Site('it','wikipedia')
+it=pywikibot.Site('it',en.family.name)
 
 if not it.logged_in():
 	it.login()
