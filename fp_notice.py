@@ -22,7 +22,7 @@ def main(family,total):
 	if not it.logged_in():
 		it.login()
 	commons=pywikibot.Site('commons','commons')
-	for image in pywikibot.Category(commons,'Featured pictures on Wikimedia Commons').articles(namespaces=6,total=70):
+	for image in pywikibot.Category(commons,'Featured pictures on Wikimedia Commons').articles(namespaces=6,total=total):
 		image_en=pywikibot.ImagePage(en,image.title())
 		using_en=usingPages(image_en)
 		if len(list(using_en))==0:
