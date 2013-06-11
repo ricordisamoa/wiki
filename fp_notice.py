@@ -31,14 +31,17 @@ def main(family,total):
 		image_it=pywikibot.ImagePage(it,image.title())
 		using_it=usingPages(image_it)
 		for page in using_en:
-			langlink=[linked for linked in page.langlinks() if linked.site==it]
-			if len(langlink)==1:
-				langlink=pywikibot.Page(langlink[0])
-				pywikibot.output('\03{'+(u'lightgreen}}{en} and {it} have "{image}"' if langlink in list(using_it) else 'lightred}}{en} has {image} but {it} has not').format(en=page,image=image.title(),it=langlink)+'\03{default}')
-				if not langlink in list(using_it):
-					log(page,langlink,image)
-			elif len(langlink)==0:
-				pywikibot.output(u'\03{lightyellow}'+u'{en} has "{image}" but no {langlink} langlink is present'.format(en=page,image=image.title(),langlink=it)+'\03{default}')
+			try:
+				langlink=[linked for linked in page.langlinks() if linked.site==it]
+				if len(langlink)==1:
+					langlink=pywikibot.Page(langlink[0])
+					pywikibot.output('\03{'+(u'lightgreen}}{en} and {it} have "{image}"' if langlink in list(using_it) else 'lightred}}{en} has {image} but {it} has not').format(en=page,image=image.title(),it=langlink)+'\03{default}')
+					if not langlink in list(using_it):
+						log(page,langlink,image)
+				elif len(langlink)==0:
+					pywikibot.output(u'\03{lightyellow}'+u'{en} has "{image}" but no {langlink} langlink is present'.format(en=page,image=image.title(),langlink=it)+'\03{default}')
+			except:
+				pass
 
 if __name__ == '__main__':
 	total=None
