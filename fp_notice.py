@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	family='wikipedia'
 	for arg in pywikibot.handleArgs():
 		if arg.startswith('-total:'):
-			total=int(total[7:])
+			total=int(arg[7:])
 		elif arg.startswith('-fam:'):
-			family=total[5:]
+			family=arg[5:]
 	main(family,total)
