@@ -42,7 +42,7 @@ for utente in utenti:
 	if disc.find(tag)!=-1:
 		pywikibot.output(u'\03{lightblue}%s\03{default}: \03{lightgreen}gli auguri sono già stati inviati\03{default}'%utente.name())
 		continue
-	discussione.text+='\n\n== Auguri ==\nBuon compleanno! <small class="'+tag+'">&nbsp;&nbsp;&ndash; Messaggio automatico ([['+compleanni.title()+'|fonte]] | [['+it.namespace(3)+u':{{subst:REVISIONUSER}}|è sbagliato?]]) di</small> ~~~~'
+	discussione.text+='\n\n== Auguri ==\nBuon compleanno! <small class="'+tag+'">&nbsp;&nbsp;&ndash; Messaggio automatico ([['+compleanni.title()+'|fonte]] | [['+site.namespace(3)+u':{{subst:REVISIONUSER}}|è sbagliato?]]) di</small> ~~~~'
 	pywikibot.showDiff(disc,discussione.text)
 	discussione.save(comment='[[Wikipedia:Bot|Bot]]: auguri',minor=False)
 pywikibot.output(u'\03{lightgreen}completato\03{default}')
