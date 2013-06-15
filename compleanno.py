@@ -16,7 +16,7 @@ tag='bot-compleanno-auguri-'+str(adesso.year)
 compleanni=pywikibot.Page(site,'Wikipedia:Wikipediani/Per giorno di nascita#'+mese[0].upper()+mese[1:])
 pywikibot.output(u'Sto cercando gli utenti nati il giorno %d %s'%(adesso.day,mese))
 utenti=re.search(ur"\*\s*'*\[\["+str(adesso.day)+" "+mese+"\]\]'*\s*(\:|\-)\s*(?P<utenti>[^\n]+)\n",compleanni.get()).group('utenti')
-utenti=[pywikibot.User(site,link.group('nome')) for link in re.finditer(ur'\[\[\s*([Uu]ser|['+re.escape(site.namespace(2)[0].upper()+site.namespace(2)[0].lower())+']'+re.escape(site.namespace(2)[1:])+')\:(?P<nome>[^\|\{\}\[\]]+)(\]\]|\|[^\]]+\]\])',utenti)]
+utenti=list(set([pywikibot.User(site,link.group('nome')) for link in re.finditer(ur'\[\[\s*([Uu]ser|['+re.escape(site.namespace(2)[0].upper()+site.namespace(2)[0].lower())+']'+re.escape(site.namespace(2)[1:])+')\:(?P<nome>[^\|\{\}\[\]]+)(\]\]|\|[^\]]+\]\])',utenti)]))
 if len(utenti)==0:
 	pywikibot.output(yellow%'il nome utente non risulta registrato') 
 pywikibot.output(u'Invierò gli auguri a \03{lightblue}%s'%'\03{default}, \03{lightblue}'.join([utente.name() for utente in utenti[0:-1]])+('\03{default} e \03{lightblue}'+utenti[-1].name() if len(utenti)>1 else '')+'\03{default}')
