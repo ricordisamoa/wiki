@@ -10,10 +10,19 @@ site=pywikibot.Site('it','wikipedia')
 if not site.logged_in():
 	site.login()
 
+pages={
+	'wikipedia':{
+		'it':'Wikipedia:Wikipediani/Per giorno di nascita'
+	},
+	'wikinews':{
+		'it':'Wikinotizie:Wikinotiziani/Compleanno'
+	}
+}
+
 adesso=datetime.datetime.now()
 mese=site.mediawiki_message(calendar.month_name[adesso.month].lower())
 tag='bot-compleanno-auguri-'+str(adesso.year)
-compleanni=pywikibot.Page(site,'Wikipedia:Wikipediani/Per giorno di nascita#'+mese[0].upper()+mese[1:])
+compleanni=pywikibot.Page(site,pages[site.family.name][site.lang]+'#'+mese[0].upper()+mese[1:])
 pywikibot.output(u'Sto cercando gli utenti nati il giorno %d %s'%(adesso.day,mese))
 utenti=re.search(ur"\*\s*'*\[\["+str(adesso.day)+" "+mese+"\]\]'*\s*(\:|\-)\s*(?P<utenti>[^\n]+)\n",compleanni.get()).group('utenti')
 utenti=list(set([pywikibot.User(site,link.group('nome')) for link in re.finditer(ur'\[\[\s*([Uu]ser|['+re.escape(site.namespace(2)[0].upper()+site.namespace(2)[0].lower())+']'+re.escape(site.namespace(2)[1:])+')\:(?P<nome>[^\|\{\}\[\]]+)(\]\]|\|[^\]]+\]\])',utenti)]))
