@@ -26,9 +26,15 @@ pywikibot.handleArgs()
 site = pywikibot.Site('wikidata','wikidata').data_repository()
 site.login()
 
-optin = pywikibot.Page(site,'User:BeneBot*/RfD-optin#List').get(force=True)
 user_regex = re.compile('^\*\s*\[\[User\:(?P<name>[^\[\]]+)\]\](\n|$)', flags=re.MULTILINE)
-optin = [x.group('name') for x in user_regex.finditer(optin)]
+
+"""
+OLD CODE FOR OPT-IN LIST
+
+optin = [x.group('name') for x in user_regex.finditer(pywikibot.Page(site,'User:BeneBot*/RfD-optin#List').get(force=True))]
+"""
+
+optout = [x.group('name') for x in user_regex.finditer(pywikibot.Page(site,'User:BeneBot*/RfD-optout#List').get(force=True))]
 
 regex = re.compile('== \[\[(?P<qid>Q\d*?)\]\] ==(?P<text>.*?)((?===)|$)', flags=re.DOTALL)
 page = pywikibot.Page(site, 'Wikidata:Requests for deletions')
@@ -58,14 +64,14 @@ for m in x:
             print 'deletion log for %s contains %d entries, skipping'%(deleted.getID(),len(deleted_log))
             continue
         by = deleted_log[0].user()
-        if by in optin:
-            addition = ('{{deleted|admin=%s}}' if deleted.getID() == q.getID() else '{{deleted}} the other one by {{user|%s}}')%by
-            print addition
-            t = re.sub(ur'\n+$','',t) + '\n:' + addition + ' --~~~~\n'
-            text = text.replace(m.group(), t)
-            marked_list.append(q.getID())
-        else:
-            print '%s has not opted-in, skipping'%by
+        if by in optout:
+            print '%s has opted-out, skipping'%by
+            continue
+        addition = ('{{deleted|admin=%s}}' if deleted.getID() == q.getID() else '{{deleted}} the other one by {{user|%s}}')%by
+        print addition
+        t = re.sub(ur'\n+$','',t) + '\n:' + addition + ' --~~~~\n'
+        text = text.replace(m.group(), t)
+        marked_list.append(q.getID())
 if len(marked_list)>0:
     summary = 'Bot: marking %(count)d request{{PLURAL:%(count)d||s}} as deleted'
     if len(marked_list)==1:
