@@ -54,21 +54,21 @@ for m in x:
             if search:
                 deleted = pywikibot.ItemPage(site,search.group('qid'))
         if not deleted:
-            print 'no deleted item found, skipping'
+            pywikibot.output('no deleted item found, skipping')
             continue
         if deleted and deleted.exists():
-            print 'the item still exists, skipping'
+            pywikibot.output('the item still exists, skipping')
             continue
         deleted_log = list(deleted.site.logevents(logtype='delete',page=deleted))
         if len(deleted_log)!=1:
-            print 'deletion log for %s contains %d entries, skipping'%(deleted.getID(),len(deleted_log))
+            pywikibot.output('\03{lightyellow}deletion log for %s contains %d entries, skipping\03{default}'%(deleted.getID(),len(deleted_log)))
             continue
         by = deleted_log[0].user()
         if by in optout:
-            print '%s has opted-out, skipping'%by
+            pywikibot.output('\03{lightyellow}%s has opted-out, skipping\03{default}'%by)
             continue
         addition = ('{{deleted|admin=%s}}' if deleted.getID() == q.getID() else '{{deleted}} the other one by {{user|%s}}')%by
-        print addition
+        pywikibot.output('\03{lightgreen}%s\03{default}'%addition)
         t = re.sub(ur'\n+$','',t) + '\n:' + addition + ' --~~~~\n'
         text = text.replace(m.group(), t)
         marked_list.append(q.getID())
@@ -79,4 +79,4 @@ if len(marked_list)>0:
     pywikibot.showDiff(oldtext, text)
     page.put(text, pywikibot.i18n.translate('en',summary,{'count':len(marked_list)}), minorEdit=True, botflag=True)
 else:
-    print 'no requests to be marked!'
+    pywikibot.output('\03{lightgreen}no requests to be marked!\03{default}')
