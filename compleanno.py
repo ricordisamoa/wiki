@@ -34,6 +34,9 @@ def main(site=pywikibot.Site('it','wikipedia'),basedate=datetime.date.today(),ba
 			if not utente.isRegistered():
 				pywikibot.output(yellow%'il nome utente non risulta registrato')
 				continue
+			if utente.isBlocked(force=True):
+				pywikibot.output(yellow%'l\'utente risulta bloccato')
+				continue
 			if not utente.getUserPage().exists():
 				pywikibot.output(yellow%'la pagina utente non esiste')
 				continue
