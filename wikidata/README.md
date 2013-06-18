@@ -6,5 +6,8 @@ A collection of scripts assisting with the creation and upkeep of wikidata.org
 
 Forked from [Legoktm](//github.com/legoktm)'s [rfd_done-er.py](//github.com/legoktm/wikidata/blob/master/rfd_done-er.py), it is the source for [SamoaBot](//www.wikidata.org/wiki/User:SamoaBot)'s [Task 31](//www.wikidata.org/wiki/Wikidata:Requests_for_permissions/Bot/SamoaBot_31).
 
+### delinker.py
+
+It allows to globally replace claims referring to a Wikidata item with a new one, taking commands from [this page](//www.wikidata.org/wiki/User:SamoaBot/Delinker/commands).
 
 **...more will come!**
