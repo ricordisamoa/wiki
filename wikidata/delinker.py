@@ -12,7 +12,7 @@ def main(commands='User:SamoaBot/Delinker/commands'):
 	text=basepage.get(force=True)
 	code=mwparserfromhell.parse(text)
 	for template in code.ifilter_templates():
-		if template.name.replace(basepage.title(),'').lower().strip()=='/row':
+		if unicode(template.name).replace(basepage.title(),'').lower().strip()=='/row':
 			if template.has_param('status'):
 				pywikibot.output(yellow%'"status" field already set')
 				continue
