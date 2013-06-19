@@ -3,7 +3,7 @@
 import re
 import pywikibot
 
-def main(site=pywikibot.Site('it','wikivoyage'),autosave=True,forcecat='Template bandierine nazionali',forcelen=3):
+def main(site=pywikibot.Site('it','wikivoyage'),save=True,autosave=False,forcecat=False,forcelen=False):
 	if not site.logged_in():
 		site.login()
 	c=site.namespace(14)
@@ -22,7 +22,7 @@ def main(site=pywikibot.Site('it','wikivoyage'),autosave=True,forcecat='Template
 		page.text=re.sub(z+re.escape(page.title(withNamespace=False))+'|\{\{PAGENAME\}\})\s*\]\]',y,page.text)
 		if old!=page.text:
 			pywikibot.showDiff(old,page.text)
-			if autosave or pywikibot.inputChoice(page.title(),['Yes','No'],['Y','N'],'N').strip().lower() in ['yes','y']:
+			if save and (autosave or pywikibot.inputChoice(page.title(),['Yes','No'],['Y','N'],'N').strip().lower() in ['yes','y']):
 				try:
 					page.save(comment=u'[['+site.namespace(4)+':Bot|Bot]]: rimozione chiave di categorizzazione non necessaria',minor=True,botflag=True)
 				except pywikibot.LockedPage:
