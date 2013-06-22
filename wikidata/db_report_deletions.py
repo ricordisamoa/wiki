@@ -26,4 +26,4 @@ table += '\n|}'
 page.text = ''.join(re.split(ur'(\<\!\-\- *bot\:start *\-\-\>\n*)',page.text,flags=re.IGNORECASE)[0:2]) + table + ''.join(re.split(ur'(\n*\<\!\-\- *bot\:end *\-\-\>)',page.text,flags=re.IGNORECASE)[1:3])
 pywikibot.showDiff(text,page.text)
 print page.text
-page.save(comment=u'[['+site.namespace(4)+':Bot|Bot]]: update database report',botflag=True)
+page.save(comment=u'[['+site.namespace(4)+':Bots|Bot]]: update database report',botflag=True)
