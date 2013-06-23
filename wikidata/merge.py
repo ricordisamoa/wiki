@@ -12,6 +12,14 @@ def del_msg(item):
 	except:
 		pywikibot.output(u'{item} does not exist'.format(item=item.getID()))
 
+def empty(xdict):
+	for key in xdict.keys():
+		if isinstance(xdict[key],list):
+			xdict[key]=['']*len(xdict[key])
+		else:
+			xdict[key]=''
+	return xdict
+
 def merge_items(item1,item2,force_lower=True,taxon_mode=True):
 	if force_lower:
 		item1,item2=sorted((item1,item2),key=lambda j: int(j.getID().lower().replace('q','')))
