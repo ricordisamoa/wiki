@@ -14,12 +14,15 @@ prop = 'p21'
 male = pywikibot.ItemPage(site,'Q6581097')
 personal_name = pywikibot.ItemPage(site,'Q1071027')
 
-lines = urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/male.txt')
+lines = list(urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/male.txt'))
 
 pywikibot.handleArgs()
 
+pywikibot.output(u'{} items to process'.format(len(lines)))
 if len(sys.argv)>1:
-	lines = list(lines)[sys.argv[1].split('-')[0]:sys.argv[1].split('-')[1]]
+	limits = (int(sys.argv[1].split('-')[0]),int(sys.argv[1].split('-')[1]))
+	lines = list(lines)[limits[0]:limits[1]]
+	pywikibot.output(u'items limited from {0[0]} to {0[1]}'.format(limits))
 
 def log(title,item,text=''):
 	pywikibot.output(u'\03{{lightyellow}}item {qid}{text}\03{{default}}'.format(qid=item.getID(),text=text))
