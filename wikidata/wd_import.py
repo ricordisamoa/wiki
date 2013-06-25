@@ -1,7 +1,9 @@
 # -*- coding: utf-8  -*-
 
+import string
 import pywikibot
 import mwparserfromhell
+from references import languages as reference_languages
 
 wd=pywikibot.Site('wikidata','wikidata').data_repository()
 
@@ -19,23 +21,83 @@ harvesting=[
 				'remove':'itwiki'
 			}
 		]
+	},
+	{
+		'name':['bio'],
+		'sites':['itwiki'],
+		'params':[
+			{
+				'name':['Sesso','sesso'],
+				'claims':'p21',
+				'filter':[string.strip,string.upper],
+				'map':{
+					'M':pywikibot.ItemPage(wd,'Q6581097'),
+					'F':pywikibot.ItemPage(wd,'Q6581072')
+				}
+			}
+		]
 	}
 ]
 
 def from_page(page,import_data=True,remove=False):
-	print page.title()
+	pywikibot.output(u'parsing {page}'.format(page=page))
+	item=pywikibot.ItemPage.fromPage(page)
+	if not item.exists():
+		pywikibot.output(u'\03{{lightyellow}}item not found for {page}\03{{default}}'.format(page=page))
+		return False
 	text=page.get(force=True)
 	code=mwparserfromhell.parse(text)
+	imported=[]
 	for template in code.ifilter_templates():
-		tname=template.name.lower().strip()
+		tname=template.name.strip()
 		for harv in harvesting:
-			if tname==harv['name'] or tname in harv['name']:
+			if tname==harv['name'] or tname in harv['name'] or tname.lower()==harv['name'] or tname.lower() in harv['name']:
+				if 'sites' in harv and (not page.site.dbName() in harv['sites']):
+					pywikibot.output(u'\03{lightyellow}%s template was found but skipped because site is not whitelisted\03{default}'%template.name)
+					continue
 				for param in harv['params']:
 					for pname in ([param['name']] if isinstance(param['name'],basestring) else param['name']):
 						if template.has_param(pname):
-							pywikibot.output('\03{lightgreen}%s parameter found in %s: %s\03{default}'%(pname,template.name,template.get(pname)))
+							rawvalue=value=unicode(template.get(pname).value)
+							pywikibot.output(u'\03{lightgreen}%s parameter found in %s: %s\03{default}'%(pname,tname,value))
+							if 'filter' in param:
+								for func in (param['filter'] if isinstance(param['filter'],list) else [param['filter']]):
+									value=func(value)
+							if 'map' in param:
+								if value in param['map']:
+									value=param['map'][value]
+								else:
+									pywikibot.output('\03{lightyellow}%s value was skipped because it is not mapped\03{default}'%value)
+									continue
+							if value!=rawvalue:
+								pywikibot.output(u'{pname} parameter formatted from {frm} to {to}'.format(pname=pname,frm=rawvalue,to=value))
+							if import_data:
+								for prop in (param['claims'] if isinstance(param['claims'],list) else [param['claims']]):
+									if isinstance(import_data,list) and not prop in import_data:
+										pywikibot.output('\03{lightyellow}%s claim was to be added but was skipped because it is not whitelisted\03{default}'%prop)
+									else:
+										claim=pywikibot.Claim(wd,prop)
+										claim.setTarget(value)
+										reference=pywikibot.Claim(wd,'p143')
+										reference.setTarget(pywikibot.ItemPage(wd,'Q'+str(reference_languages[page.site.lang])))
+										if not prop in item.claims:
+											item.addClaim(claim)
+											pywikibot.output(u'\03{{lightgreen}}{qid}: claim successfully added\03{{default}}'.format(qid=item.getID()))
+											claim.addSource(reference,bot=1)
+											pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+											item.get(force=True)
+											imported.append(prop)
+										elif prop in item.claims and len(item.claims[prop])==1 and item.claims[prop][0].getTarget()==claim.getTarget():
+											try:
+												item.claims[prop][0].addSource(reference,bot=1)
+												pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+												item.get(force=True)
+												imported.append(prop)
+											except:
+												pass
 							break
 				break
+	return imported
 
 if __name__=='__main__':
 	total=None

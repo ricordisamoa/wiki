@@ -3,17 +3,15 @@
 import re
 import urllib2
 import pywikibot
+from wd_import import from_page as import_from_page
 
 site = pywikibot.Site('wikidata','wikidata').data_repository()
 site.login()
 
 prop = 'p21'
 
-male = pywikibot.Claim(site,prop)
-male.setTarget(pywikibot.ItemPage(site,'Q6581097'))
-
-reference = pywikibot.Claim(site,'p143')
-reference.setTarget(pywikibot.ItemPage(site,'Q1071027'))
+male = pywikibot.ItemPage(site,'Q6581097')
+personal_name = pywikibot.ItemPage(site,'Q1071027')
 
 pywikibot.handleArgs()
 
@@ -37,14 +35,26 @@ for line in urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/m
 		if re.search(ur'\band\b',item.labels['en']):
 			log('User:SamoaBot/sex doubts',item,u'contains "and" in English label: "{label}"'.format(label=item.labels['en']))
 			continue
+	if 'itwiki' in item.sitelinks:
+		pywikibot.output(u'\03{{lightyellow}}trying to import {propid} for {qid} from itwiki sitelink: {ittitle}\03{{default}}'.format(propid=prop,qid=item.getID(),ittitle=item.sitelinks['itwiki']))
+		import_from_page(pywikibot.Page(pywikibot.Site('it','wikipedia'),item.sitelinks['itwiki']),import_data=[prop])
+	reference = pywikibot.Claim(site,'p143')
+	reference.setTarget(personal_name)
+	item.get(force=True)
 	if not prop in item.claims:
-		item.addClaim(male)
+		claim = pywikibot.Claim(site,prop)
+		claim.setTarget(male)
+		item.addClaim(claim)
 		pywikibot.output(u'\03{{lightgreen}}{qid}: claim successfully added\03{{default}}'.format(qid=item.getID()))
-		male.addSource(reference,bot=1)
+		claim.addSource(reference,bot=1)
 		pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
 		continue
-	if prop in item.claims and len(item.claims[prop])==1 and item.claims[prop][0].getTarget().getID()==male.getTarget().getID():
-		item.claims[prop][0].addSource(reference,bot=1)
-		pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+	item.get(force=True)
+	if prop in item.claims and len(item.claims[prop])==1 and item.claims[prop][0].getTarget().getID()==male.getID():
+		try:
+			item.claims[prop][0].addSource(reference,bot=1)
+			pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+		except:
+			pass
 		continue
 	log('User:SamoaBot/sex conflicts',item,u'has "{{{{P|{propid}}}}} = {value}"'.format(propid=prop.replace('q',''),value=', '.join([u'{{{{Q|{qid}}}}}'.format(qid=claim.getTarget().getID()) for claim in item.claims[prop]])))
