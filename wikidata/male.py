@@ -69,4 +69,4 @@ for line in lines:
 		except:
 			pass
 		continue
-	log('User:SamoaBot/sex conflicts',item,u' has "{{{{P|{propid}}}}} = {value}"'.format(propid=prop.replace('q',''),value=', '.join([u'{{{{Q|{qid}}}}}'.format(qid=claim.getTarget().getID().replace('q','')) for claim in item.claims[prop]])))
+	log('User:SamoaBot/sex conflicts',item,u' has "{{{{P|{propid}}}}} = {value}"'.format(propid=prop.replace('p',''),value=', '.join([u'{{{{Q|{qid}}}}}'.format(qid=claim.getTarget().getID().replace('q','')) for claim in item.claims[prop]])))
