@@ -67,30 +67,31 @@ def from_page(page,import_data=True,remove=False):
 								if value in param['map']:
 									value=param['map'][value]
 								else:
-									pywikibot.output('\03{lightyellow}%s value was skipped because it is not mapped\03{default}'%value)
+									pywikibot.output(u'\03{lightyellow}%s value was skipped because it is not mapped\03{default}'%value)
 									continue
 							if value!=rawvalue:
 								pywikibot.output(u'{pname} parameter formatted from {frm} to {to}'.format(pname=pname,frm=rawvalue,to=value))
 							if import_data:
 								for prop in (param['claims'] if isinstance(param['claims'],list) else [param['claims']]):
 									if isinstance(import_data,list) and not prop in import_data:
-										pywikibot.output('\03{lightyellow}%s claim was to be added but was skipped because it is not whitelisted\03{default}'%prop)
+										pywikibot.output(u'\03{lightyellow}%s claim was to be added but was skipped because it is not whitelisted\03{default}'%prop)
 									else:
 										claim=pywikibot.Claim(wd,prop)
 										claim.setTarget(value)
 										reference=pywikibot.Claim(wd,'p143')
 										reference.setTarget(pywikibot.ItemPage(wd,'Q'+str(reference_languages[page.site.lang])))
+										reference.getTarget().get()
 										if not prop in item.claims:
 											item.addClaim(claim)
 											pywikibot.output(u'\03{{lightgreen}}{qid}: claim successfully added\03{{default}}'.format(qid=item.getID()))
 											claim.addSource(reference,bot=1)
-											pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+											pywikibot.output(u'\03{{lightgreen}}{qid}: source "{source}" successfully added\03{{default}}'.format(qid=item.getID(),source=reference.getTarget().labels['en']))
 											item.get(force=True)
 											imported.append(prop)
 										elif prop in item.claims and len(item.claims[prop])==1 and item.claims[prop][0].getTarget()==claim.getTarget():
 											try:
 												item.claims[prop][0].addSource(reference,bot=1)
-												pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+												pywikibot.output(u'\03{{lightgreen}}{qid}: source "{source}" successfully added\03{{default}}'.format(qid=item.getID(),source=reference.getTarget().labels['en']))
 												item.get(force=True)
 												imported.append(prop)
 											except:

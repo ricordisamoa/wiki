@@ -1,6 +1,7 @@
 # -*- coding: utf-8  -*-
 
 import re
+import sys
 import urllib2
 import pywikibot
 from wd_import import from_page as import_from_page
@@ -13,7 +14,12 @@ prop = 'p21'
 male = pywikibot.ItemPage(site,'Q6581097')
 personal_name = pywikibot.ItemPage(site,'Q1071027')
 
+lines = urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/male.txt')
+
 pywikibot.handleArgs()
+
+if len(sys.argv)>1:
+	lines = list(lines)[sys.argv[1].split('-')[0]:sys.argv[1].split('-')[1]]
 
 def log(title,item,text=''):
 	pywikibot.output(u'\03{{lightyellow}}item {qid}{text}\03{{default}}'.format(qid=item.getID(),text=text))
@@ -22,12 +28,16 @@ def log(title,item,text=''):
 	page.text += '\n'+u'*{{{{Q|{qid}}}}}'.format(qid=item.getID())+text
 	page.save(u'[[Wikidata:Bots|Bot]]: [[{qid}]]{text}'.format(qid=item.getID(),text=text),minor=True,botflag=True)
 
-for line in urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/male.txt'):
+for line in lines:
 	item = pywikibot.ItemPage(site,line)
 	if not item.exists():
 		pywikibot.output(u'\03{{lightred}}item {qid} does not exist\03{{default}}'.format(qid=item.getID()))
 		continue
 	item.get(force=True)
+	if 'itwiki' in item.sitelinks:
+		pywikibot.output(u'\03{{lightyellow}}trying to import {propid} for {qid} from itwiki sitelink: {ittitle}\03{{default}}'.format(propid=prop,qid=item.getID(),ittitle=item.sitelinks['itwiki']))
+		import_from_page(pywikibot.Page(pywikibot.Site('it','wikipedia'),item.sitelinks['itwiki']),import_data=[prop])
+		item.get(force=True)
 	if 'en' in item.labels:
 		if re.search(ur'\bthe\b',item.labels['en']):
 			log('User:SamoaBot/sex doubts',item,u'contains "the" in English label: "{label}"'.format(label=item.labels['en']))
@@ -35,9 +45,6 @@ for line in urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/m
 		if re.search(ur'\band\b',item.labels['en']):
 			log('User:SamoaBot/sex doubts',item,u'contains "and" in English label: "{label}"'.format(label=item.labels['en']))
 			continue
-	if 'itwiki' in item.sitelinks:
-		pywikibot.output(u'\03{{lightyellow}}trying to import {propid} for {qid} from itwiki sitelink: {ittitle}\03{{default}}'.format(propid=prop,qid=item.getID(),ittitle=item.sitelinks['itwiki']))
-		import_from_page(pywikibot.Page(pywikibot.Site('it','wikipedia'),item.sitelinks['itwiki']),import_data=[prop])
 	reference = pywikibot.Claim(site,'p143')
 	reference.setTarget(personal_name)
 	item.get(force=True)
@@ -47,13 +54,13 @@ for line in urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/m
 		item.addClaim(claim)
 		pywikibot.output(u'\03{{lightgreen}}{qid}: claim successfully added\03{{default}}'.format(qid=item.getID()))
 		claim.addSource(reference,bot=1)
-		pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+		pywikibot.output(u'\03{{lightgreen}}{qid}: source "personal name" successfully successfully added\03{{default}}'.format(qid=item.getID()))
 		continue
 	item.get(force=True)
 	if prop in item.claims and len(item.claims[prop])==1 and item.claims[prop][0].getTarget().getID()==male.getID():
 		try:
 			item.claims[prop][0].addSource(reference,bot=1)
-			pywikibot.output(u'\03{{lightgreen}}{qid}: source successfully added\03{{default}}'.format(qid=item.getID()))
+			pywikibot.output(u'\03{{lightgreen}}{qid}: source "personal name" successfully added\03{{default}}'.format(qid=item.getID()))
 		except:
 			pass
 		continue
