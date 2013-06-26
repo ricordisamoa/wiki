@@ -142,7 +142,7 @@ def merge_items(item1,item2,force_lower=True,taxon_mode=True):
 def error_merge_msg(item1,item2):
 	pywikibot.output(u'\03{{lightred}}error while merging {item1} and {item2}\03{{lightblue}}'.format(item1=item1.getID(),item2=item2.getID()))
 
-def delete_item(item,other,by=site.user()):
+def delete_item(item,other,by=site.user(),rfd=False):
 	item.get(force=True)
 	other.get(force=True)
 	if len(item.sitelinks)>0:
@@ -163,8 +163,15 @@ def delete_item(item,other,by=site.user()):
 		if (not prop in other.claims) or len(list(set([claim.getTarget() for claim in item.claims[prop]])-set([claim.getTarget() for claim in other.claims[prop]]))):
 			error_merge_msg(item,other)
 			return
-	item.delete(reason=u'Merged with [[{qid}]] by [[User:{by}|{by}]]'.format(qid=other.getID().upper(),by=by))
-	pywikibot.output(u'\03{{lightgreen}}{qid} successfully deleted\03{{lightblue}}'.format(qid=item.getID()))
+	if rfd:
+		rfd_page=pywikibot.Page(site,'Requests for deletions',ns=4)
+		rfd_page.get(force=True)
+		rfd_page.text+=u'\n\n{{{{subst:Request for deletion|itemid={qid}|reason=Merged with {other}{by}}}}} --~~~~'.format(qid=item.getID(),other=other.getID(),by=(u' by [[User:{by}|{by}]]'.format(by=by) if by!=site.user() else ''))
+		page.save(comment=u'[[Wikidata:Bots|Bot]]: nominating [[{qid}]] for deletion'.format(qid=item.getID().upper()),minor=False,botflag=True)
+		pywikibot.output(u'\03{{lightgreen}}{qid} successfully nominated for deletion\03{{default}}'.format(qid=item.getID()))
+	else:
+		item.delete(reason=u'Merged with [[{qid}]] by [[User:{by}|{by}]]'.format(qid=other.getID().upper(),by=by))
+		pywikibot.output(u'\03{{lightgreen}}{qid} successfully deleted\03{{default}}'.format(qid=item.getID()))
 
 def main(source='User:Soulkeeper/dups',sourcetype=list,taxon_mode=True):
 	text = pywikibot.Page(site,source).get(force=True)
