@@ -156,7 +156,7 @@ def delete_item(item,other,by=site.user()):
 		return
 	for key in item.aliases:
 		for alias in item.aliases[key]:
-			if (not key in other.aliases) or (not alias in other.aliases[key]):
+			if alias.strip()!='' and ((not key in other.aliases) or (not alias in other.aliases[key])):
 				error_merge_msg(item,other)
 				return
 	for prop in item.claims:
