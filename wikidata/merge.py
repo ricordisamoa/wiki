@@ -36,7 +36,7 @@ def compare(item1,item2,dictname):
 	dict2=getattr(item2,dictname)
 	for key in dict1:
 		if key in dict2 and dict2[key]!=dict1[key]:
-			pywikibot.output('\03{{lightred}}{key} conflicting in {dictname}: {val1} in {item1} but {val2} in {item2}\03{{default}}'.format(key=key,dictname=dictname,item1=item1.getID(),item2=item2.getID(),val1=dict1[key],val2=dict2[key]))
+			pywikibot.output(u'\03{{lightred}}{key} conflicting in {dictname}: {val1} in {item1} but {val2} in {item2}\03{{default}}'.format(key=key,dictname=dictname,item1=item1.getID(),item2=item2.getID(),val1=dict1[key],val2=dict2[key]))
 			return False
 	return True
 
@@ -92,7 +92,7 @@ def merge_items(item1,item2,force_lower=True,taxon_mode=True):
 			new_data['aliases'][language]=list(set(new_data['aliases'][language]+item2.aliases[language]))
 		else:
 			new_data['aliases'][language]=item2.aliases[language]
-	pywikibot.output('\03{lightblue}diff for new_data:\03{lightblue}')
+	pywikibot.output(u'\03{lightblue}diff for new_data:\03{lightblue}')
 	pywikibot.showDiff(old_dump,dump(new_data))
 	new_data=clean_data(new_data)
 	empty_data={
@@ -104,7 +104,7 @@ def merge_items(item1,item2,force_lower=True,taxon_mode=True):
 	old_dump=dump(empty_data)
 	for key in empty_data.keys():
 		empty_data[key]=empty(empty_data[key])
-	pywikibot.output('\03{lightblue}diff for empty_data:\03{lightblue}')
+	pywikibot.output(u'\03{lightblue}diff for empty_data:\03{lightblue}')
 	pywikibot.showDiff(old_dump,dump(empty_data))
 	empty_data=clean_data(empty_data)
 	item2.editEntity(empty_data)
