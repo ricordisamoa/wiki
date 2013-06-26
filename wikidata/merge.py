@@ -48,8 +48,8 @@ def clean_data(xdict):
 	for language in xdict['descriptions'].keys():
 		xdict['descriptions'][language]={'language':language,'value':xdict['descriptions'][language]}
 	for language in xdict['aliases'].keys():
-		for alias in xdict['aliases'][language]:
-			alias={'language':language,'value':alias}
+		for index,item in enumerate(xdict['aliases'][language]):
+			xdict['aliases'][language][index]={'language':language,'value':xdict['aliases'][language][index]}
 	return xdict
 
 def merge_items(item1,item2,force_lower=True,taxon_mode=True):
@@ -87,9 +87,11 @@ def merge_items(item1,item2,force_lower=True,taxon_mode=True):
 	new_data['descriptions'].update(item2.descriptions)
 	pywikibot.output('\03{lightblue}diff for new_data:\03{lightblue}')
 	pywikibot.showDiff(old_dump,dump(new_data))
-	for language in new_data['aliases'].keys():
-		if language in item2.aliases:
+	for language in item2.aliases:
+		if language in new_data['aliases']:
 			new_data['aliases'][language]=list(set(new_data['aliases'][language]+item2.aliases[language]))
+		else:
+			new_data['aliases'][language]=item2.aliases[language]
 	new_data=clean_data(new_data)
 	empty_data={
 		'sitelinks':item2.sitelinks,
