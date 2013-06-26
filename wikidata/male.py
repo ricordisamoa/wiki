@@ -62,11 +62,21 @@ for line in lines:
 		pywikibot.output(u'\03{{lightgreen}}{qid}: source "personal name" successfully added\03{{default}}'.format(qid=item.getID()))
 		continue
 	item.get(force=True)
-	if prop in item.claims and len(item.claims[prop])==1 and item.claims[prop][0].getTarget().getID()==male.getID():
-		try:
-			item.claims[prop][0].addSource(reference,bot=1)
-			pywikibot.output(u'\03{{lightgreen}}{qid}: source "personal name" successfully added\03{{default}}'.format(qid=item.getID()))
-		except:
-			pass
-		continue
+	if prop in item.claims:
+		if len(item.claims[prop])==1 and item.claims[prop][0].getTarget().getID()==male.getID():
+			try:
+				item.claims[prop][0].addSource(reference,bot=1)
+				pywikibot.output(u'\03{{lightgreen}}{qid}: source "personal name" successfully added\03{{default}}'.format(qid=item.getID()))
+			except:
+				pass
+			continue
+		elif len(item.claims[prop])==2 and item.claims[prop][0].getTarget().getID()==male.getID() and item.claims[prop][1].getTarget().getID()==male.getID():
+			try:
+				item.removeClaims([item.claims[prop][1]])
+				pywikibot.output(u'\03{{lightgreen}}{qid}: removed duplicate claim for {propid}\03{{default}}'.format(qid=item.getID(),propid=prop))
+				item.claims[prop][0].addSource(reference,bot=1)
+				pywikibot.output(u'\03{{lightgreen}}{qid}: source "personal name" successfully added\03{{default}}'.format(qid=item.getID()))
+			except:
+				pass
+			continue
 	log('User:SamoaBot/sex conflicts',item,u' has "{{{{P|{propid}}}}} = {value}"'.format(propid=prop.replace('p',''),value=', '.join([u'{{{{Q|{qid}}}}}'.format(qid=claim.getTarget().getID().replace('q','')) for claim in item.claims[prop]])))
