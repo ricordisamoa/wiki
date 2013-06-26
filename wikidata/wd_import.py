@@ -158,7 +158,7 @@ def from_page(page,import_data=True,remove=False,remove_exact=['VIAF','LCCN'],au
 						elif template.has_param(pname,False):
 							page.text,removed=remove_if(removed,template,pname,'',page.text)
 				break
-	if remove and removed and (not remove_exact or len(list(set(removed)-set(remove_exact)))==0):
+	if remove and removed and (not remove_exact or len(list(set(remove_exact)-set(removed)))==0):
 		pywikibot.showDiff(text,page.text)
 		if autosave or pywikibot.inputChoice(page.title(),['Yes', 'No'],['Y', 'N'],'N').strip().lower() in ['yes','y']:
 			page.save(comment=field_removal_summary[page.site.lang].format(', '.join(removed)),minor=True,botflag=True)
