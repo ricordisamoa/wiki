@@ -26,9 +26,9 @@ def dump(xdict):
 def empty(xdict):
 	for key in xdict.keys():
 		if isinstance(xdict[key],list):
-			xdict[key]=['']*len(xdict[key])
+			xdict[key]=[u'']*len(xdict[key])
 		else:
-			xdict[key]=''
+			xdict[key]=u''
 	return xdict
 
 def compare(item1,item2,dictname):
@@ -49,7 +49,10 @@ def clean_data(xdict):
 		xdict['descriptions'][language]={'language':language,'value':xdict['descriptions'][language]}
 	for language in xdict['aliases'].keys():
 		for index,item in enumerate(xdict['aliases'][language]):
-			xdict['aliases'][language][index]={'language':language,'value':xdict['aliases'][language][index]}
+			xdict['aliases'][language][index]={'language':language,'value':item}
+	for key in xdict.keys():
+		if len(xdict[key])==0:
+			del xdict[key]
 	return xdict
 
 def merge_items(item1,item2,force_lower=True,taxon_mode=True):
@@ -74,7 +77,6 @@ def merge_items(item1,item2,force_lower=True,taxon_mode=True):
 	if taxon_mode and len(dup_sl)!=1:
 		pywikibot.output(u'\03{lightyellow}'+str(dup_sl)+'\03{default}')
 		return
-	taxon_mode
 	new_data={
 		'sitelinks':item1.sitelinks,
 		'labels':item1.labels,
@@ -85,13 +87,13 @@ def merge_items(item1,item2,force_lower=True,taxon_mode=True):
 	new_data['sitelinks'].update(item2.sitelinks)
 	new_data['labels'].update(item2.labels)
 	new_data['descriptions'].update(item2.descriptions)
-	pywikibot.output('\03{lightblue}diff for new_data:\03{lightblue}')
-	pywikibot.showDiff(old_dump,dump(new_data))
 	for language in item2.aliases:
 		if language in new_data['aliases']:
 			new_data['aliases'][language]=list(set(new_data['aliases'][language]+item2.aliases[language]))
 		else:
 			new_data['aliases'][language]=item2.aliases[language]
+	pywikibot.output('\03{lightblue}diff for new_data:\03{lightblue}')
+	pywikibot.showDiff(old_dump,dump(new_data))
 	new_data=clean_data(new_data)
 	empty_data={
 		'sitelinks':item2.sitelinks,
