@@ -59,7 +59,7 @@ harvesting=[
 ]
 
 field_removal_summary={
-	'it':'[[Wikipedia:Bot|Bot]]: rimozione campi {} migrati a [[d:|Wikidata]]'
+	'it':'[[Wikipedia:Bot|Bot]]: rimozione campi {fields} migrati a [[d:|Wikidata]]: [[d:{qid}]]'
 }
 
 def remove_if(removed,template,field,value,text):
@@ -161,7 +161,7 @@ def from_page(page,import_data=True,remove=False,remove_exact=['VIAF','LCCN'],au
 	if remove and removed and (not remove_exact or len(list(set(remove_exact)-set(removed)))==0):
 		pywikibot.showDiff(text,page.text)
 		if autosave or pywikibot.inputChoice(page.title(),['Yes', 'No'],['Y', 'N'],'N').strip().lower() in ['yes','y']:
-			page.save(comment=field_removal_summary[page.site.lang].format(', '.join(removed)),minor=True,botflag=True)
+			page.save(comment=field_removal_summary[page.site.lang].format(fields=', '.join(removed),qid=item.getID().upper()),minor=True,botflag=True)
 	return (imported,removed)
 
 if __name__=='__main__':
