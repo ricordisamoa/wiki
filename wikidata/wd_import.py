@@ -152,7 +152,7 @@ def from_page(page,import_data=True,remove=False,remove_exact=['VIAF','LCCN'],au
 												pass
 							if remove and (isinstance(param['claims'],basestring) or len(param['claims'])==1):
 								prop=(param['claims'] if isinstance(param['claims'],basestring) else param['claims'][0])
-								if len(item.claims[prop])==1:
+								if prop in item.claims and len(item.claims[prop])==1:
 									page.text,removed=remove_if(removed,template,pname,item.claims[prop][0].getTarget(),page.text)
 							break
 						elif template.has_param(pname,False):

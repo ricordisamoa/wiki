@@ -4,7 +4,7 @@ import pywikibot
 
 site=pywikibot.Site('it','wikipedia')
 
-for image in site.allimages(prefix='Stub ',total=100):
+for image in site.allimages(prefix='Stub ',total=None):
 	data=pywikibot.data.api.Request(site=site,action='query',titles=image.title(),prop='duplicatefiles').submit()['query']['pages']
 	for info in data:
 		if 'duplicatefiles' in data[info]:
