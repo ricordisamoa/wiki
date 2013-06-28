@@ -174,6 +174,7 @@ if __name__=='__main__':
 	recurse=None
 	template=None
 	start=None
+	titles=[]
 	for arg in pywikibot.handleArgs():
 		if arg.startswith('-total:'):
 			total=int(arg[7:])
@@ -197,7 +198,9 @@ if __name__=='__main__':
 			template=arg[10:]
 		elif arg.startswith('-start:'):
 			start=arg[7:]
-	pages=[]
+		elif arg.startswith('-page:'):
+			titles.append(arg[6:])
+	pages=[pywikibot.Page(site,title) for title in titles]
 	if template:
 		pages=pages+list(pywikibot.Page(site,template,ns=10).getReferences(namespaces=0,onlyTemplateInclusion=True,total=total))
 	if cat:
