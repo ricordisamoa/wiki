@@ -55,36 +55,54 @@ harvesting=[
 				}
 			}
 		]
+	},
+	{
+		'name':['botanici','botanist'],
+		'sites':['itwiki','enwiki'],
+		'params':[
+			{
+				'name':'1',
+				'displayed':'Botanici',
+				'claims':'p428',
+				'filter':ur'^[\w\.\s]+$',
+				'remove':'itwiki'
+			}
+		]
 	}
 ]
 
 field_removal_summary={
-	'it':'[[Wikipedia:Bot|Bot]]: rimozione campi {fields} migrati a [[d:|Wikidata]]: [[d:{qid}]]'
+	'it':'[[Wikipedia:Bot|Bot]]: rimozione camp{{PLURAL:%(fields_num)d|o|i}} %(fields)s migrat{{PLURAL:%(fields_num)d|o|i}} a [[d:|Wikidata]]: [[d:%(qid)s]]'
 }
 
-def remove_if(removed,template,field,value,text):
+def remove_if(removed,template,field,value,text,displayed=None):
+	if not displayed:
+		displayed=field
 	template_text=unicode(template)
 	if not template.has_param(field,False) and template.has_param(field.upper(),False):
 		field=field.upper()
+	conflict=True
 	if template.has_param(field,False):
 		try:
-			if unicode(template.get(field).value).strip()==value or (field=='LCCN' and format_lccn(unicode(template.get(field).value).strip())==value) or formatIMDb(unicode(template.get(field).value).strip(),'tt')==value or formatIMDb(unicode(template.get(field).value).strip(),'nm')==value or formatIMDb(unicode(template.get(field).value).strip(),'ch')==value or formatIMDb(unicode(template.get(field).value).strip(),'co')==value:
+			if unicode(template.get(field).value).strip()==value or (field=='LCCN' and format_lccn(unicode(template.get(field).value).strip())==value):
 				template.remove(field,force_no_field=True)
 				pywikibot.output(u'\03{{lightgreen}}field {} matches: removed\03{{default}}'.format(field))
-				removed.append(field)
+				conflict=False
+				removed.append(displayed)
 			elif unicode(template.get(field).value).strip()=='':
 				template.remove(field,force_no_field=True)
 				pywikibot.output(u'\03{{lightgreen}}field {} empty: removed\03{{default}}'.format(field))
-				removed.append(field)
+				conflict=False
+				removed.append(displayed)
 			else:
 				pywikibot.output(u'\03{{lightyellow}}field {} does not match: cannot be removed\03{{default}}'.format(field))
 		except:
 			pass
 	else:
 		pywikibot.output(u'\03{{lightyellow}}field {} not found in template\03{{default}}'.format(field))
-	return text.replace(template_text,unicode(template)),removed
+	return text.replace(template_text,unicode(template)),removed,conflict
 
-def from_page(page,import_data=True,remove=False,remove_exact=['VIAF','LCCN'],autosave=False):
+def from_page(page,import_data=True,remove=False,remove_all_only=True,autosave=False):
 	pywikibot.output(u'parsing {page}'.format(page=page))
 	item=pywikibot.ItemPage.fromPage(page)
 	if not item.exists():
@@ -102,6 +120,9 @@ def from_page(page,import_data=True,remove=False,remove_exact=['VIAF','LCCN'],au
 					pywikibot.output(u'\03{lightyellow}%s template was found but skipped because site is not whitelisted\03{default}'%template.name)
 					continue
 				for param in harv['params']:
+					can_remove=False
+					if 'remove' in param and (param['remove']==True or param['remove']==page.site.dbName() or page.site.dbName() in param['remove']):
+						can_remove=True
 					for pname in ([param['name']] if isinstance(param['name'],basestring) else param['name']):
 						if template.has_param(pname):
 							rawvalue=value=unicode(template.get(pname).value)
@@ -150,18 +171,25 @@ def from_page(page,import_data=True,remove=False,remove_exact=['VIAF','LCCN'],au
 												imported.append(prop)
 											except:
 												pass
-							if remove and (isinstance(param['claims'],basestring) or len(param['claims'])==1):
+							if can_remove and remove and (isinstance(param['claims'],basestring) or len(param['claims'])==1):
 								prop=(param['claims'] if isinstance(param['claims'],basestring) else param['claims'][0])
 								if prop in item.claims and len(item.claims[prop])==1:
-									page.text,removed=remove_if(removed,template,pname,item.claims[prop][0].getTarget(),page.text)
+									page.text,removed,conflict=remove_if(removed,template,pname,item.claims[prop][0].getTarget(),page.text,displayed=(param['displayed'] if 'displayed' in param else pname))
+									if conflict:
+										remove=False
+								else:
+									remove=False
 							break
-						elif template.has_param(pname,False):
-							page.text,removed=remove_if(removed,template,pname,'',page.text)
+						elif can_remove and template.has_param(pname,False):
+							page.text,removed,conflict=remove_if(removed,template,pname,'',page.text,displayed=(param['displayed'] if 'displayed' in param else pname))
+							if conflict:
+								remove=False
 				break
-	if remove and removed and (not remove_exact or len(list(set(remove_exact)-set(removed)))==0):
+	if remove and removed:
 		pywikibot.showDiff(text,page.text)
-		if autosave or pywikibot.inputChoice(page.title(),['Yes', 'No'],['Y', 'N'],'N').strip().lower() in ['yes','y']:
-			page.save(comment=field_removal_summary[page.site.lang].format(fields=', '.join(removed),qid=item.getID().upper()),minor=True,botflag=True)
+		comment=pywikibot.i18n.translate(page.site,field_removal_summary,{'fields_num':len(removed),'fields':', '.join(removed),'qid':item.getID().upper()})
+		if autosave or pywikibot.inputChoice(page.title()+' @ '+comment,['Yes', 'No'],['Y', 'N'],'N').strip().lower() in ['yes','y']:
+			page.save(comment=comment,minor=True,botflag=True)
 	return (imported,removed)
 
 if __name__=='__main__':
@@ -181,7 +209,7 @@ if __name__=='__main__':
 		elif arg.startswith('-noimport'):
 			import_data=False
 		elif arg.startswith('-import:'):
-			import_data=[arg[8:]]
+			import_data=(list(set(import_data+[arg[8:]])) if isinstance(import_data,list) and len(import_data)>0 else [arg[8:]])
 		elif arg.startswith('-remove'):
 			remove=True
 		elif arg.startswith('-autosave'):
