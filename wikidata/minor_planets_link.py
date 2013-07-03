@@ -29,22 +29,32 @@ def main(site1=pywikibot.Site('fy','wikipedia'),site2=pywikibot.Site('en','wikip
 			continue
 		item1 = pywikibot.ItemPage.fromPage(page1)
 		item2 = pywikibot.ItemPage.fromPage(page2)
-		if item2.exists():
-			if not item1.exists():
-				try:
-					item2.get(force=True)
-					newdata = {'sitelinks':{}}
-					newdata['sitelinks'][site1.dbName()] = {'site':site1.dbName(),'title':page1.title()}
-					if not site1.lang in item2.labels:
-						newdata['labels'] = {}
-						newdata['labels'][site1.lang] = {'language':site1.lang,'value':page1.title()}
-					item2.editEntity(newdata)
-					pywikibot.output(u'\03{lightgreen}editEntity successful\03{default}')
-				except:
-					pywikibot.output(u'\03{lightred}editEntity failed\03{default}')
-			elif item1!=item2:
-				pywikibot.output(u'\03{{lightyellow}}{} and {} should be merged\03{{default}}'.format(item1.getID(),item2.getID()))
-				# TODO: call merge.py
+		if not item2.exists():
+			continue
+		if item1.exists() and item1!=item2:
+			pywikibot.output(u'\03{{lightyellow}}{} and {} should be merged\03{{default}}'.format(item1.getID(),item2.getID()))
+			continue
+			# TODO: call merge.py
+		item2.get(force=True)
+		newdata = {}
+		if not item1.exists():
+			newdata['sitelinks'] = {}
+			newdata['sitelinks'][site1.dbName()] = {'site':site1.dbName(),'title':page1.title()}
+			if not site1.lang in item2.labels:
+				newdata['labels'] = {}
+				newdata['labels'][site1.lang] = {'language':site1.lang,'value':page1.title()}
+		for dbname in item2.sitelinks:
+			s=pywikibot.Site(dbname.replace('wiki','').replace('_','-'),'wikipedia') # hack
+			if not s.lang in item2.labels:
+				if not 'labels' in newdata:
+					newdata['labels'] = {}
+				newdata['labels'][s.lang] = {'language':s.lang,'value':item2.sitelinks[dbname]}
+		if len(newdata)>0:
+			try:
+				item2.editEntity(newdata)
+				pywikibot.output(u'\03{lightgreen}editEntity successful\03{default}')
+			except:
+				pywikibot.output(u'\03{lightred}editEntity failed\03{default}')
 
 if __name__=='__main__':
 	pywikibot.handleArgs()
