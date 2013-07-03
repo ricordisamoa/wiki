@@ -4,7 +4,7 @@ import re
 import string
 import pywikibot
 import mwparserfromhell
-from references import languages as reference_languages
+from references import sites as reference_sites
 
 wd=pywikibot.Site('wikidata','wikidata').data_repository()
 
@@ -154,7 +154,7 @@ def from_page(page,import_data=True,remove=False,remove_all_only=True,autosave=F
 										claim=pywikibot.Claim(wd,prop)
 										claim.setTarget(value)
 										reference=pywikibot.Claim(wd,'p143')
-										reference.setTarget(pywikibot.ItemPage(wd,'Q'+str(reference_languages[page.site.lang])))
+										reference.setTarget(pywikibot.ItemPage(wd,'Q'+str(reference_sites[page.site.dbName()])))
 										reference.getTarget().get()
 										if not prop in item.claims:
 											item.addClaim(claim)
