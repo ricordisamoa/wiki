@@ -9,8 +9,8 @@ from references import sites as reference_sites
 wd=pywikibot.Site('wikidata','wikidata').data_repository()
 
 def format_lccn(prev):
-	prev=prev.replace(' ','').replace('-','').replace('.','')
 	prev=re.sub(r'^http:\/\/lccn\.loc\.gov\/(.+)$','\g<1>',prev)
+	prev=prev.strip().replace(u'\u200f','').replace(' ','').replace('-','').replace('.','')
 	try:
 		prev=re.sub(r'(\w\/\d+)','\g<1>'+('0'*(6-len(re.search(r'\w\/\d+\/(\d+)',prev).group(1)))),prev,count=1)
 	except:
