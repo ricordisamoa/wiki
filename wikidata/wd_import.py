@@ -175,14 +175,14 @@ def from_page(page,import_data=True,remove=False,remove_all_only=True,autosave=F
 								prop=(param['claims'] if isinstance(param['claims'],basestring) else param['claims'][0])
 								if prop in item.claims and len(item.claims[prop])==1:
 									page.text,removed,conflict=remove_if(removed,template,pname,item.claims[prop][0].getTarget(),page.text,displayed=(param['displayed'] if 'displayed' in param else pname))
-									if conflict:
+									if conflict and remove_all_only:
 										remove=False
-								else:
+								elif remove_all_only:
 									remove=False
 							break
 						elif can_remove and template.has_param(pname,False):
 							page.text,removed,conflict=remove_if(removed,template,pname,'',page.text,displayed=(param['displayed'] if 'displayed' in param else pname))
-							if conflict:
+							if conflict and remove_all_only:
 								remove=False
 				break
 	if remove and removed:
