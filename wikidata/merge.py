@@ -55,7 +55,8 @@ def clean_data(xdict):
 			del xdict[key]
 	return xdict
 
-def merge_items(item1,item2,force_lower=True,taxon_mode=True):
+def merge_items(tupl,force_lower=True,taxon_mode=True):
+	item1,item2 = tupl
 	if force_lower:
 		item1,item2=sorted((item1,item2),key=lambda j: int(j.getID().lower().replace('q','')))
 	if not item1.exists():
@@ -173,14 +174,31 @@ def delete_item(item,other,by=site.user(),rfd=False):
 		item.delete(reason=u'Merged with [[{qid}]] by [[User:{by}|{by}]]'.format(qid=other.getID().upper(),by=by))
 		pywikibot.output(u'\03{{lightgreen}}{qid} successfully deleted\03{{default}}'.format(qid=item.getID()))
 
-def main(source='User:Soulkeeper/dups',sourcetype=list,taxon_mode=True):
-	text = pywikibot.Page(site,source).get(force=True)
-	regex = re.compile('^\*\s*\w+[\w\s]*\[\[\:?(?P<item1>[Qq]\d+)\]\] \[\[\:?(?P<item2>[Qq]\d+)\]\]\n',flags=re.MULTILINE)
-	for match in regex.finditer(text):
-		item1 = pywikibot.ItemPage(site,match.group('item1'))
-		item2 = pywikibot.ItemPage(site,match.group('item2'))
-		merge_items(item1,item2,taxon_mode=taxon_mode)
-
 if __name__=='__main__':
-	pywikibot.handleArgs()
-	main()
+	cat=None
+	lang2=None
+	recurse=None
+	total=None
+	for arg in pywikibot.handleArgs():
+		if arg.startswith('-cat:'):
+			cat=arg[5:]
+		elif arg.startswith('-lang2:'):
+			lang2=arg[7:]
+		elif arg.startswith('-recurse:'):
+			recurse=int(arg[9:])
+		elif arg.startswith('-total:'):
+			total=int(arg[7:])
+	if cat and lang2:
+		site2=pywikibot.Site(lang2,pywikibot.Site().family.name)
+		for page1 in pywikibot.Category(pywikibot.Site(),cat).articles(recurse=recurse,total=total):
+			page2=pywikibot.Page(site2,page1.title())
+			if page2.exists():
+				item1=pywikibot.ItemPage.fromPage(page1)
+				item2=pywikibot.ItemPage.fromPage(page2)
+				if item1!=item2:
+					merge_items((item1,item2))
+	else:
+		text = pywikibot.Page(site,'User:Soulkeeper/dups').get(force=True)
+		regex = re.compile('^\*\s*\w+[\w\s]*\[\[\:?(?P<item1>[Qq]\d+)\]\] \[\[\:?(?P<item2>[Qq]\d+)\]\]\n',flags=re.MULTILINE)
+		for match in regex.finditer(text):
+			merge_items((pywikibot.ItemPage(site,match.group('item1')),pywikibot.ItemPage(site,match.group('item2'))))
