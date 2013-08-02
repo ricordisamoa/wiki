@@ -1,9 +1,10 @@
 # -*- coding: utf-8  -*-
 
 import re
+import json
 import pywikibot
 
-site = pywikibot.Site('wikidata','wikidata').data_repository()
+site = pywikibot.Site().data_repository()
 site.login()
 
 def del_msg(item):
@@ -54,6 +55,55 @@ def clean_data(xdict):
 		if len(xdict[key])==0:
 			del xdict[key]
 	return xdict
+
+def fromDBName(dbname):
+	s=pywikibot.site.APISite.fromDBName(dbname)
+	return pywikibot.Site(s.code,s.family.name)
+
+def user_link(user):
+	page=pywikibot.Page(user.site,'Contributions/'+user.name(),ns=-1)
+	if (not user.isAnonymous()) and user.getUserPage().exists():
+		page=user.getUserPage()
+	return u'[[{}|{}]]'.format(page.title(),user.name())
+
+def check_deletable(item,safe=True):
+	if not item.exists():
+		del_msg(item)
+		return
+	item.get(force=True)
+	if len(item.sitelinks)>0:
+		pywikibot.output(u'\03{{lightyellow}}{item} has {num} sitelinks, skipping\03{{default}}'.format(item=item,num=len(item.sitelinks)))
+		return
+	if len(item.claims)>0:
+		pywikibot.output(u'\03{{lightyellow}}{item} has {num} claims, skipping\03{{default}}'.format(item=item,num=len(item.claims)))
+		return
+	refs=len(list(item.getReferences(namespaces=0)))
+	if refs>0:
+		pywikibot.output(u'\03{{lightyellow}}{item} has {num} references in the main namespace, skipping\03{{default}}'.format(item=item,num=refs))
+		return
+	print item.getID()
+	history=list(item.fullVersionHistory())
+	if len(history)==1:
+		print u'created empty by '+history[0][2]
+	elif len(history)==2:
+		prev=json.loads(history[1][3])
+		cur=json.loads(history[0][3])
+		if 'links' in prev and len(prev['links'])==1 and (len(cur['links'])==0 or not 'links' in cur):
+			removed_link=pywikibot.Link(prev['links'][prev['links'].keys()[0]],fromDBName(prev['links'].keys()[0]))
+			removed_page=pywikibot.Page(removed_link)
+			moved_into=pywikibot.ItemPage.fromPage(removed_page)
+			if moved_into.exists():
+				user=pywikibot.User(item.site,history[0][2])
+				msg=u'{user} moved {link} into [[{qid}]]'.format(link=removed_link.astext(onsite=item.site),qid=moved_into.getID().upper(),user=user_link(user))
+				if safe==False or 'autoconfirmed' in user.groups():
+					# safety check: only delete the item if the last editor is autoconfirmed
+					delete_item(item,moved_into,msg=msg)
+				else:
+					pywikibot.output(u'\03{{lightyellow}}Skipped: {msg}\03{{default}}'.format(msg=msg))
+			else:
+				pywikibot.output(u'\03{{lightyellow}}{page} does NOT have an associated item, skipping\03{{default}}'.format(page=removed_page))
+	elif len(history)>2:
+		pywikibot.output(u'\03{{lightyellow}}{item}\'s history has {num} entries, skipping\03{{default}}'.format(item=item,num=len(history)))
 
 def merge_items(tupl,force_lower=True,taxon_mode=True):
 	item1,item2 = tupl
@@ -141,9 +191,9 @@ def merge_items(tupl,force_lower=True,taxon_mode=True):
 	delete_item(item2,item1)
 
 def error_merge_msg(item1,item2):
-	pywikibot.output(u'\03{{lightred}}error while merging {item1} and {item2}\03{{lightblue}}'.format(item1=item1.getID(),item2=item2.getID()))
+	pywikibot.output(u'\03{{lightred}}error while merging {item1} and {item2}\03{{default}}'.format(item1=item1.getID(),item2=item2.getID()))
 
-def delete_item(item,other,by=site.user(),rfd=False):
+def delete_item(item,other,msg=None,by=site.user(),rfd=False):
 	item.get(force=True)
 	other.get(force=True)
 	if len(item.sitelinks)>0:
@@ -167,18 +217,19 @@ def delete_item(item,other,by=site.user(),rfd=False):
 	if rfd:
 		rfd_page=pywikibot.Page(site,'Requests for deletions',ns=4)
 		rfd_page.get(force=True)
-		rfd_page.text+=u'\n\n{{{{subst:Request for deletion|itemid={qid}|reason=Merged with {other}{by}}}}} --~~~~'.format(qid=item.getID(),other=other.getID(),by=(u' by [[User:{by}|{by}]]'.format(by=by) if by!=site.user() else ''))
+		rfd_page.text+=u'\n\n{{{{subst:Request for deletion|itemid={qid}|reason={msg}}}}} --~~~~'.format(qid=item.getID(),msg=(msg if msg else u'Merged with {other}{by}'.format(other=other.getID(),by=(u' by [[User:{by}|{by}]]'.format(by=by) if by!=site.user() else ''))))
 		page.save(comment=u'[[Wikidata:Bots|Bot]]: nominating [[{qid}]] for deletion'.format(qid=item.getID().upper()),minor=False,botflag=True)
-		pywikibot.output(u'\03{{lightgreen}}{qid} successfully nominated for deletion\03{{default}}'.format(qid=item.getID()))
+		pywikibot.output(u'\03{{lightgreen}}{item} successfully nominated for deletion\03{{default}}'.format(item=item))
 	else:
-		item.delete(reason=u'Merged with [[{qid}]] by [[User:{by}|{by}]]'.format(qid=other.getID().upper(),by=by))
-		pywikibot.output(u'\03{{lightgreen}}{qid} successfully deleted\03{{default}}'.format(qid=item.getID()))
+		item.delete(reason=(msg if msg else u'Merged with [[{qid}]] by [[User:{by}|{by}]]'.format(qid=other.getID().upper(),by=by)))
+		pywikibot.output(u'\03{{lightgreen}}{item} successfully deleted\03{{default}}'.format(item=item))
 
 if __name__=='__main__':
 	cat=None
 	lang2=None
 	recurse=None
 	total=None
+	bulk=None
 	for arg in pywikibot.handleArgs():
 		if arg.startswith('-cat:'):
 			cat=arg[5:]
@@ -188,6 +239,10 @@ if __name__=='__main__':
 			recurse=int(arg[9:])
 		elif arg.startswith('-total:'):
 			total=int(arg[7:])
+		elif arg.startswith('-bulk:'):
+			bulk=arg[6:]
+		elif arg.startswith('-bulk'):
+			bulk=True
 	if cat and lang2:
 		site2=pywikibot.Site(lang2,pywikibot.Site().family.name)
 		for page1 in pywikibot.Category(pywikibot.Site(),cat).articles(recurse=recurse,total=total):
@@ -197,8 +252,13 @@ if __name__=='__main__':
 				item2=pywikibot.ItemPage.fromPage(page2)
 				if item1!=item2:
 					merge_items((item1,item2))
+	elif bulk:
+		text = pywikibot.Page(site,u'Requests for deletions/Bulk'+('' if bulk==True else '/'+bulk),ns=4).get(force=True)
+		regex = re.compile('\|(?P<item>[Qq]\d+)')
+		for match in list(regex.finditer(text)):#[124:]:
+			check_deletable(pywikibot.ItemPage(site,match.group('item')))
 	else:
-		text = pywikibot.Page(site,'User:Soulkeeper/dups').get(force=True)
+		text = pywikibot.Page(site,'Soulkeeper/dups',ns=2).get(force=True)
 		regex = re.compile('^\*\s*\w+[\w\s]*\[\[\:?(?P<item1>[Qq]\d+)\]\] \[\[\:?(?P<item2>[Qq]\d+)\]\]\n',flags=re.MULTILINE)
 		for match in regex.finditer(text):
 			merge_items((pywikibot.ItemPage(site,match.group('item1')),pywikibot.ItemPage(site,match.group('item2'))))
