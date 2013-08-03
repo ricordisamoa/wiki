@@ -10,11 +10,15 @@ site = pywikibot.Site('wikidata','wikidata').data_repository()
 site.login()
 
 prop = 'p21'
+multimode = True # advanced
 
-male = pywikibot.ItemPage(site,'Q6581097')
+genders = {
+	'male':pywikibot.ItemPage(site,'Q6581097'),
+	'female':pywikibot.ItemPage(site,'Q6581072')
+}
 personal_name = pywikibot.ItemPage(site,'Q1071027')
 
-lines = list(urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/male.txt'))
+lines = list(urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/'+('gender_estimate.tab' if multimode else 'male.txt')))
 
 pywikibot.handleArgs()
 
@@ -34,7 +38,15 @@ def log(title,item,text=''):
 		page.save(u'[[Wikidata:Bots|Bot]]: [[{qid}]]{text}'.format(qid=item.getID(),text=text),minor=True,botflag=True)
 
 for line in lines:
-	item = pywikibot.ItemPage(site,line)
+	if multimode:
+		match = re.match(u'(?P<item>[Qq]\d+)\t(?P<gender>('+'|'.join(genders.keys())+'))\t(?P<name>\S+)',line,flags=re.MULTILINE)
+		if not match:
+			continue
+		item = pywikibot.ItemPage(site,match.group('item'))
+		gender = genders[match.group('gender')]
+	else:
+		item = pywikibot.ItemPage(site,line)
+		gender = genders['male']
 	if not item.exists():
 		pywikibot.output(u'\03{{lightred}}item {qid} does not exist\03{{default}}'.format(qid=item.getID()))
 		continue
@@ -55,7 +67,7 @@ for line in lines:
 	item.get(force=True)
 	if not prop in item.claims:
 		claim = pywikibot.Claim(site,prop)
-		claim.setTarget(male)
+		claim.setTarget(gender)
 		item.addClaim(claim)
 		pywikibot.output(u'\03{{lightgreen}}{qid}: claim successfully added\03{{default}}'.format(qid=item.getID()))
 		claim.addSource(reference,bot=1)
@@ -63,14 +75,14 @@ for line in lines:
 		continue
 	item.get(force=True)
 	if prop in item.claims:
-		if len(item.claims[prop])==1 and item.claims[prop][0].getTarget().getID()==male.getID():
+		if len(item.claims[prop])==1 and item.claims[prop][0].getTarget().getID()==gender.getID():
 			try:
 				item.claims[prop][0].addSource(reference,bot=1)
 				pywikibot.output(u'\03{{lightgreen}}{qid}: source "personal name" successfully added\03{{default}}'.format(qid=item.getID()))
 			except:
 				pass
 			continue
-		elif len(item.claims[prop])==2 and item.claims[prop][0].getTarget().getID()==male.getID() and item.claims[prop][1].getTarget().getID()==male.getID():
+		elif len(item.claims[prop])==2 and item.claims[prop][0].getTarget().getID()==gender.getID() and item.claims[prop][1].getTarget().getID()==gender.getID():
 			try:
 				item.removeClaims([item.claims[prop][1]])
 				pywikibot.output(u'\03{{lightgreen}}{qid}: removed duplicate claim for {propid}\03{{default}}'.format(qid=item.getID(),propid=prop))
