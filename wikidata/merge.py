@@ -21,7 +21,7 @@ def dump(xdict):
 			continue
 		mlen=max([len(f) for f in xdict[key].keys()])
 		for k in xdict[key]:
-			lines.append(key+' '*(maxlen-len(key))+k+' '*(mlen-len(k))+' : '+str(xdict[key][k]))
+			lines.append(key+' '*(maxlen-len(key))+k+' '*(mlen-len(k))+' : '+unicode(xdict[key][k]))
 	return '\n'.join(lines)
 
 def empty(xdict):
@@ -83,6 +83,11 @@ def check_deletable(item,safe=True):
 		return
 	print item.getID()
 	history=list(item.fullVersionHistory())
+	if len(history)>2:
+		for entry in list(history[1:len(history)-1]):
+			if 'bot' in pywikibot.User(item.site,entry[2]).groups():
+				print 'removed {bot} from history'.format(bot=entry[2])
+				del history[history.index(entry)]
 	if len(history)==1:
 		print u'created empty by '+history[0][2]
 	elif len(history)==2:
@@ -125,9 +130,12 @@ def merge_items(tupl,force_lower=True,taxon_mode=True):
 	if compare(item1,item2,'descriptions')==False:
 		return
 	dup_sl=list(set(item1.sitelinks.values()+item2.sitelinks.values()))
-	if taxon_mode and len(dup_sl)!=1:
-		pywikibot.output(u'\03{lightyellow}'+str(dup_sl)+'\03{default}')
-		return
+	if taxon_mode:
+		if len(dup_sl)!=1:
+			pywikibot.output(u'\03{lightyellow}'+str(dup_sl)+'\03{default}')
+			return
+	else:
+		pywikibot.output(u'\03{lightyellow}Warning: taxon mode disabled\03{default}')
 	new_data={
 		'sitelinks':item1.sitelinks,
 		'labels':item1.labels,
@@ -243,6 +251,11 @@ if __name__=='__main__':
 			bulk=arg[6:]
 		elif arg.startswith('-bulk'):
 			bulk=True
+		elif arg.startswith('-custom'):
+			text = pywikibot.Page(site,u'Bot requests#Merge multiple items',ns=4).get(force=True)
+			regex = re.compile('^\s*\*\s*\[http\:\/\/nssdc\.gsfc\.nasa\.gov\/nmc\/spacecraftDisplay\.do\?id\=[\w\d\-\s]+\]\: \{\{[Qq]\|(?P<item1>\d+)\}\}\, \{\{[Qq]\|(?P<item2>\d+)\}\}',flags=re.MULTILINE)
+			for match in regex.finditer(text):
+				merge_items((pywikibot.ItemPage(site,'Q'+match.group('item1')),pywikibot.ItemPage(site,'Q'+match.group('item2'))),taxon_mode=False)
 	if cat and lang2:
 		site2=pywikibot.Site(lang2,pywikibot.Site().family.name)
 		for page1 in pywikibot.Category(pywikibot.Site(),cat).articles(recurse=recurse,total=total):
@@ -255,7 +268,7 @@ if __name__=='__main__':
 	elif bulk:
 		text = pywikibot.Page(site,u'Requests for deletions/Bulk'+('' if bulk==True else '/'+bulk),ns=4).get(force=True)
 		regex = re.compile('\|(?P<item>[Qq]\d+)')
-		for match in list(regex.finditer(text)):#[124:]:
+		for match in regex.finditer(text):
 			check_deletable(pywikibot.ItemPage(site,match.group('item')))
 	else:
 		text = pywikibot.Page(site,'Soulkeeper/dups',ns=2).get(force=True)
