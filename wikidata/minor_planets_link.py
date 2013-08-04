@@ -14,7 +14,7 @@ fmt={
 	'nl':u'Lijst van planetoïden {}-{}'
 }
 
-def main(site1=pywikibot.Site('fy','wikipedia'),site2=pywikibot.Site('en','wikipedia')):
+def main(site1=pywikibot.Site('fy','wikipedia'),site2=pywikibot.Site('nl','wikipedia')):
 	site1.data_repository().login()
 	regex=re.escape(fmt[site1.lang]).replace('\{','{').replace('\}','}').format('(\d+)','(\d+)')
 	for page1 in pywikibot.Category(site1,cat[site1.lang]).articles():
