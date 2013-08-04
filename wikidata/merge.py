@@ -131,7 +131,7 @@ def duplicates(tupl,force_lower=True):
 		if len(item.claims)>0:
 			pywikibot.output(u'\03{{lightyellow}}{item} has {num} claims\03{{default}}'.format(item=item,num=len(item.claims)))
 			return
-		if len(item.descriptions)>0:
+		if len(item.descriptions)>0 and (len(item.descriptions)>1 or (not 'es' in item.descriptions) or item.descriptions['es']!=u'categoría de Wikipedia'):
 			pywikibot.output(u'\03{{lightyellow}}{item} has {num} descriptions\03{{default}}'.format(item=item,num=len(item.descriptions)))
 			return
 		if len(item.aliases)>0:
