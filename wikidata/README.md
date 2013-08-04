@@ -14,4 +14,8 @@ It allows to globally replace claims referring to a Wikidata item with a new one
 
 Forked from [Legoktm](//github.com/legoktm)'s [rfd_done-er.py](//github.com/legoktm/wikidata/blob/master/rfd_done-er.py), it is the source for [SamoaBot](//www.wikidata.org/wiki/User:SamoaBot)'s [Task 31](//www.wikidata.org/wiki/Wikidata:Requests_for_permissions/Bot/SamoaBot_31).
 
+### software_versions.py
+
+A set of software-related Wikidata items and lambda functions to keep latest versions up to date: [SamoaBot 8](//www.wikidata.org/wiki/Wikidata:Requests_for_permissions/Bot/SamoaBot_8)
+
 **...more will come!**
