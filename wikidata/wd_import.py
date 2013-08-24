@@ -32,7 +32,7 @@ harvesting=[
 				'name':'VIAF',
 				'claims':'p214',
 				'remove':'itwiki',
-				'filter':'^\d+$'
+				'filter':[string.strip,'^\d+$']
 			},{
 				'name':'LCCN',
 				'claims':'p244',
@@ -66,6 +66,22 @@ harvesting=[
 				'claims':'p428',
 				'filter':ur'^[\w\.\s]+$',
 				'remove':'itwiki'
+			}
+		]
+	},
+	{
+		'name':['Divisione amministrativa'],
+		'sites':['itwiki'],
+		'params':[
+			{
+				'name':'Codice statistico',
+				'claims':'p635',
+				'filter':ur'^\d{6}$'
+			},
+			{
+				'name':'Codice catastale',
+				'claims':'p806',
+				'filter':ur'^\w\d{3}$'
 			}
 		]
 	}
@@ -189,7 +205,10 @@ def from_page(page,import_data=True,remove=False,remove_all_only=True,autosave=F
 		pywikibot.showDiff(text,page.text)
 		comment=pywikibot.i18n.translate(page.site,field_removal_summary,{'fields_num':len(removed),'fields':', '.join(removed),'qid':item.getID().upper()})
 		if autosave or pywikibot.inputChoice(page.title()+' @ '+comment,['Yes', 'No'],['Y', 'N'],'N').strip().lower() in ['yes','y']:
-			page.save(comment=comment,minor=True,botflag=True)
+			try:
+				page.save(comment=comment,minor=True,botflag=True)
+			except Exception, e:
+				print e
 	return (imported,removed)
 
 if __name__=='__main__':
