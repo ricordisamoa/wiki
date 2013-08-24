@@ -6,7 +6,7 @@ import pywikibot
 import mwparserfromhell
 from references import sites as reference_sites
 
-wd=pywikibot.Site('wikidata','wikidata').data_repository()
+wd=pywikibot.Site().data_repository()
 
 def format_lccn(prev):
 	prev=re.sub(r'^http:\/\/lccn\.loc\.gov\/(.+)$','\g<1>',prev)
@@ -216,7 +216,6 @@ if __name__=='__main__':
 	import_data=True
 	remove=False
 	autosave=False
-	site=pywikibot.Site()
 	cat=None
 	recurse=None
 	template=None
@@ -233,8 +232,6 @@ if __name__=='__main__':
 			remove=True
 		elif arg.startswith('-autosave'):
 			autosave=True
-		elif arg.startswith('-wiki:'):
-			site=pywikibot.Site(arg[6:],'wikipedia')
 		elif arg.startswith('-cat:'):
 			cat=arg[5:]
 		elif arg.startswith('-category:'):
@@ -247,6 +244,7 @@ if __name__=='__main__':
 			start=arg[7:]
 		elif arg.startswith('-page:'):
 			titles.append(arg[6:])
+	site=pywikibot.Site()
 	pages=[pywikibot.Page(site,title) for title in titles]
 	if template:
 		pages=pages+list(pywikibot.Page(site,template,ns=10).getReferences(namespaces=0,onlyTemplateInclusion=True,total=total))
