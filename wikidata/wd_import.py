@@ -93,7 +93,19 @@ harvesting=[
 				'name':'1',
 				'displayed':'WDPA',
 				'claims':'p809',
-				'filter':ur'^\d+$'
+				'filter':[string.strip,ur'^\d+$']
+			}
+		]
+	},
+	{
+		'name':[u'Infobox Aire protégée'],
+		'sites':['frwiki'],
+		'params':[
+			{
+				'name':'wdpa',
+				'displayed':'WDPA',
+				'claims':'p809',
+				'filter':[string.strip,ur'^\d+$']
 			}
 		]
 	}
