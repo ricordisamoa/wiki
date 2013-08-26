@@ -216,9 +216,9 @@ def merge_items(tupl,force_lower=True,taxon_mode=True):
 	pywikibot.output(u'\03{lightblue}diff for empty_data:\03{lightblue}')
 	pywikibot.showDiff(old_dump,dump(empty_data))
 	empty_data=clean_data(empty_data)
-	item2.editEntity(empty_data)
+	item2.editEntity(empty_data,summary='moving to [[{item1}]]'.format(item1=item1.getID().upper()))
 	pywikibot.output(u'\03{{lightgreen}}{qid} successfully emptied\03{{lightblue}}'.format(qid=item2.getID()))
-	item1.editEntity(new_data)
+	item1.editEntity(new_data,summary='moved from [[{item2}]]'.format(item2=item2.getID().upper()))
 	pywikibot.output(u'\03{{lightgreen}}{qid} successfully filled\03{{lightblue}}'.format(qid=item1.getID()))
 	item1.get(force=True)
 	item2.get(force=True)
@@ -296,6 +296,7 @@ if __name__=='__main__':
 	bulk=None
 	mode=None
 	unflood=False
+	ids=[]
 	for arg in pywikibot.handleArgs():
 		if arg.startswith('-cat:'):
 			cat=arg[5:]
@@ -303,6 +304,8 @@ if __name__=='__main__':
 			lang2=arg[7:]
 		elif arg.startswith('-recurse:'):
 			recurse=int(arg[9:])
+		elif arg.startswith('-id:'):
+			ids.append(arg[4:])
 		elif arg.startswith('-total:'):
 			total=int(arg[7:])
 		elif arg.startswith('-bulk:'):
@@ -323,6 +326,8 @@ if __name__=='__main__':
 				item2=pywikibot.ItemPage.fromPage(page2)
 				if item1!=item2:
 					merge_items((item1,item2))
+	elif len(ids)==2:
+		merge_items((pywikibot.ItemPage(site,ids[0]),pywikibot.ItemPage(site,ids[1])))
 	elif bulk:
 		text = pywikibot.Page(site,u'Requests for deletions/Bulk'+('' if bulk==True else '/'+bulk),ns=4).get(force=True)
 		regex = re.compile('\|(?P<item>[Qq]\d+)')
