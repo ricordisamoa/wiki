@@ -84,6 +84,18 @@ harvesting=[
 				'filter':ur'^\w\d{3}$'
 			}
 		]
+	},
+	{
+		'name':['Wdpa'],
+		'sites':['frwiki'],
+		'params':[
+			{
+				'name':'1',
+				'displayed':'WDPA',
+				'claims':'p809',
+				'filter':ur'^\d+$'
+			}
+		]
 	}
 ]
 
