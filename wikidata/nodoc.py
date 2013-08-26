@@ -10,6 +10,7 @@ def do_item(item):
 		return True
 	item.get(force=True)
 	nd={'sitelinks':{},'labels':{}}
+	removed_from=[]
 	for dbname in item.sitelinks:
 		s=fromDBName(dbname)
 		t=item.sitelinks[dbname]
@@ -32,33 +33,41 @@ def do_item(item):
 					pywikibot.output(u'\03{{lightyellow}}Warning: {page1} redirects to {target}, which does not have a linked item\03{{default}}'.format(page1=f,target=target))
 				else:
 					nd['sitelinks'][dbname]={'site':dbname,'title':f.title()}
+					if not 'sitelinks' in removed_from:
+						removed_from.append('sitelinks')
 					if (not s.lang in item.labels) or item.labels[s.lang]==t or item.labels[s.lang]==b.title():
 						nd['labels'][s.lang]={'language':s.lang,'value':f.title()}
+						if s.lang in item.labels and (not 'labels' in removed_from):
+							removed_from.append('labels')
 		elif not s.lang in item.labels:
 			nd['labels'][s.lang]={'language':s.lang,'value':b.title()}
 	if len(nd['sitelinks'])==0 and len(nd['labels'])==0:
 		pywikibot.output(u'\03{{lightblue}}{item}: nothing to update\03{{default}}'.format(item=item))
 		return None
-	elif len(nd['sitelinks'])==1 and len(nd['labels'])==0:
+	summary=u'[['+site.namespace(4)+':Bots|Bot]]: [['+site.namespace(4)+':Requests for permissions/Bot/SamoaBot 37|removing /doc suffix from '+' and '.join(removed_from)+']]'
+	if len(nd['sitelinks'])==1 and len(nd['labels'])==0:
 		nd=nd['sitelinks'][nd['sitelinks'].keys()[0]]
-		pywikibot.data.api.Request(action='wbsetsitelink',id=item.getID(),linksite=nd['site'],linktitle=nd['title'],bot=1,token=site.data_repository().token(item,'edit'),site=item.site.data_repository()).submit()
+		pywikibot.data.api.Request(action='wbsetsitelink',id=item.getID(),linksite=nd['site'],linktitle=nd['title'],summary=summary,bot=1,token=site.data_repository().token(item,'edit'),site=item.site.data_repository()).submit()
 	else:
-		item.editEntity(nd)
+		item.editEntity(nd,summary=summary)
 	pywikibot.output(u'\03{{lightgreen}}{item} updated!\03{{default}}'.format(item=item))
 	item.get(force=True)
 	return do_item(item)==None
 
 if __name__=='__main__':
 	ids=[]
+	lang=None
 	for arg in pywikibot.handleArgs():
 		if arg.startswith('-id:'):
 			ids.append(arg[4:])
+		elif arg.startswith('-language:'):
+			lang=arg[10:]
 	site=pywikibot.Site().data_repository()
 	if len(ids)>0:
 		for qid in ids:
 			do_item(pywikibot.ItemPage(site,qid))
 	else:
-		p=pywikibot.Page(site,'User:Yamaha5/incorrect template interwiki')
+		p=pywikibot.Page(site,'Yamaha5/incorrect template interwiki'+('-'+lang if lang and lang!='en' else ''),ns=2)
 		text=p.get(force=True)
 		for match in re.finditer(ur'^\#\[\[\:?(\w+)\:([^\[\]]+)\]\]\n',text,flags=re.MULTILINE):
 			g=do_item(pywikibot.ItemPage.fromPage(pywikibot.Page(pywikibot.Site(match.group(1),'wikipedia'),match.group(2))))
