@@ -7,6 +7,9 @@ Most of them require the rewrite branch of the [Pywikipediabot](//www.mediawiki.
 ### add_section.py
 It loops onto a predefined set of `pages` and, if absent, inserts the daily section header with the specified options. Used at the moment in [it:Wikipedia:Vandalismi in corso](//it.wikipedia.org/wiki/Wikipedia:Vandalismi_in_corso) only.
 
+### calcio.py
+It can update [Serie A 2013-2014#Classifica](//it.wikipedia.org/wiki/Serie_A_2013-2014#Classifica) from http://www.legaseriea.it/it/serie-a-tim/classifica-estesa/classifica
+
 ### compleanno.py
 Written in Italian for the [Italian Wikipedia](//it.wikipedia.org), it searches for users born in the current day (from [this page](//it.wikipedia.org/wiki/Wikipedia:Wikipediani/Per_giorno_di_nascita)) and wishes them a happy birthday with a predefined message.
 
