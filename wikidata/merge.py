@@ -328,6 +328,8 @@ if __name__=='__main__':
 					merge_items((item1,item2))
 	elif len(ids)==2:
 		merge_items((pywikibot.ItemPage(site,ids[0]),pywikibot.ItemPage(site,ids[1])))
+	elif len(ids)==1:
+		check_deletable(pywikibot.ItemPage(site,ids[0]))
 	elif bulk:
 		text = pywikibot.Page(site,u'Requests for deletions/Bulk'+('' if bulk==True else '/'+bulk),ns=4).get(force=True)
 		regex = re.compile('\|(?P<item>[Qq]\d+)')
