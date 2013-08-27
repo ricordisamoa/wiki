@@ -27,6 +27,7 @@ sites={
 	'plwiki' : 1551807,
 	'ptwiki' : 11921,
 	'ruwiki' : 206855,
+	'sewiki' : 4115441,
 	'trwiki' : 58255,
 	'svwiki' : 169514,
 	'ukwiki' : 199698,
