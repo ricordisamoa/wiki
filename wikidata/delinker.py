@@ -33,6 +33,7 @@ def main(commands='User:SamoaBot/Delinker/commands'):
 				continue
 			itemfrom=pywikibot.ItemPage(wd,'Q'+unicode(template.get('from').value))
 			itemto=pywikibot.ItemPage(wd,'Q'+unicode(template.get('to').value))
+			summary=u'[[User:SamoaBot/Delinker|SamoaBot Delinker]]: migrating [[{itemfrom}]] to [[{itemto}]]'.format(itemfrom=itemfrom.getID().upper(),itemto=itemto.getID().upper())
 			status=None
 			count=0
 			refs=list(itemfrom.getReferences(namespaces=[0]))
@@ -47,7 +48,7 @@ def main(commands='User:SamoaBot/Delinker/commands'):
 					for prop in item.claims:
 						for claim in item.claims[prop]:
 							if claim.getTarget()==itemfrom:
-								claim.changeTarget(itemto)
+								claim.changeTarget(itemto,summary=summary)
 								item.get(force=True)
 								pywikibot.output(u'\03{lightgreen}changed claim target\03{default}')
 								count+=1
