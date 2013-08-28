@@ -320,7 +320,10 @@ if __name__=='__main__':
 	if cat and lang2:
 		site2=pywikibot.Site(lang2,pywikibot.Site().family.name)
 		for page1 in pywikibot.Category(pywikibot.Site(),cat).articles(recurse=recurse,total=total):
-			page2=pywikibot.Page(site2,page1.title())
+			t=page1.title()
+			if pywikibot.Site().dbName()=='suwiki' and site2.dbName()=='idwiki':
+				t=t.replace(u'é',u'e')
+			page2=pywikibot.Page(site2,t)
 			if page2.exists():
 				item1=pywikibot.ItemPage.fromPage(page1)
 				item2=pywikibot.ItemPage.fromPage(page2)
