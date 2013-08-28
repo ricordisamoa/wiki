@@ -15,8 +15,11 @@ def del_msg(item):
 def flu(pages):
 	if not isinstance(pages,list):
 		pages=[pages]
-	print 'flu: ',pages
-	pywikibot.data.api.Request(site=pages[0].site,action='purge',forcelinkupdate=1,titles='|'.join([x.title() for x in pages])).submit()
+	pywikibot.output(u'flu: '+unicode(pages))
+	try:
+		pywikibot.data.api.Request(site=pages[0].site,action='purge',forcelinkupdate=1,titles='|'.join([x.title() for x in pages])).submit()
+	except Exception,e:
+		print e
 
 def dump(xdict):
 	lines=[]
@@ -37,12 +40,19 @@ def empty(xdict):
 			xdict[key]=u''
 	return xdict
 
-def compare(item1,item2,dictname):
-	dict1=getattr(item1,dictname)
-	dict2=getattr(item2,dictname)
+def compare(item1,item2,dictname=None):
+	if dictname is None:
+		dictname='dicts'
+		dict1=item1
+		dict2=item2
+		item1='item1'
+		item2='item2'
+	else:
+		dict1=getattr(item1,dictname)
+		dict2=getattr(item2,dictname)
 	for key in dict1:
 		if key in dict2 and dict2[key]!=dict1[key]:
-			pywikibot.output(u'\03{{lightred}}{key} conflicting in {dictname}: {val1} in {item1} but {val2} in {item2}\03{{default}}'.format(key=key,dictname=dictname,item1=item1.getID(),item2=item2.getID(),val1=dict1[key],val2=dict2[key]))
+			pywikibot.output(u'\03{{lightred}}{key} conflicting in {dictname}: {val1} in {item1} but {val2} in {item2}\03{{default}}'.format(key=key,dictname=dictname,item1=item1,item2=item2,val1=dict1[key],val2=dict2[key]))
 			return False
 	return True
 
@@ -117,42 +127,58 @@ def check_deletable(item,safe=True):
 def duplicates(tupl,force_lower=True):
 	if force_lower:
 		tupl=sort_items(tupl)
-	sl=None
+	sl={}
 	for item in tupl:
 		if not item.exists():
 			del_msg(item)
 			return
 		item.get(force=True)
-		if len(item.sitelinks)!=1:
-			pywikibot.output(u'\03{{lightyellow}}{item} has {num} sitelinks\03{{default}}'.format(item=item,num=len(item.sitelinks)))
-			return
-		mysl=pywikibot.Page(fromDBName(item.sitelinks.keys()[0]),item.sitelinks[item.sitelinks.keys()[0]])
-		if sl:
-			if mysl!=sl or mysl.site!=sl.site or sl.site.sametitle(sl,mysl)==False:
-				pywikibot.output(u'\03{{lightyellow}}{item} has "{mysl}" sitelink instead of "{sl}"\03{{default}}'.format(item=item,mysl=mysl,sl=sl))
-				return
-		else:
-			sl=mysl
 		if len(item.claims)>0:
 			pywikibot.output(u'\03{{lightyellow}}{item} has {num} claims\03{{default}}'.format(item=item,num=len(item.claims)))
 			return
-		if len(item.descriptions)>0 and (len(item.descriptions)>1 or (not 'es' in item.descriptions) or item.descriptions['es']!=u'categoría de Wikipedia'):
+		if 'es' in item.descriptions and item.descriptions['es']==u'categoría de Wikipedia':
+			del item.descriptions['es']
+		if 'fr' in item.descriptions and item.descriptions['fr']==u'page de catégorie de Wikipédia':
+			del item.descriptions['fr']
+		if len(item.descriptions)>0 and len(item.descriptions)>1:
 			pywikibot.output(u'\03{{lightyellow}}{item} has {num} descriptions\03{{default}}'.format(item=item,num=len(item.descriptions)))
 			return
 		if len(item.aliases)>0:
 			pywikibot.output(u'\03{{lightyellow}}{item} has {num} aliases\03{{default}}'.format(item=item,num=len(item.aliases)))
 			return
-	pywikibot.output(u'\03{{lightpurple}}{items} have the same "{sl}" sitelink, no claims, no descriptions, and no aliases: preparing deletion\03{{default}}'.format(items=obj_join(tupl),sl=sl))
-	kept=tupl[0]
-	for deletable in tupl[1:]:
-		delete_item(deletable,kept,msg=u'[[{proj}:True duplicates|True duplicate]] of [[{kept}]] by {link}'.format(proj=item.site.namespace(4),kept=kept.getID().upper(),link=pywikibot.Link.fromPage(sl).astext(onsite=item.site)),allow_sitelinks=True)
+		if compare(sl,item.sitelinks)==False:
+			return
+		sl.update(item.sitelinks)
+	if len(sl)==1:
+		pywikibot.output(u'\03{{lightpurple}}{items} have the same "{sl}" sitelink, no claims, no descriptions, and no aliases: preparing deletion\03{{default}}'.format(items=obj_join(tupl),sl=sl))
+		kept=tupl[0]
+		deletable=tupl[1:]
+		shared=[(sl.keys()[0],sl[sl.keys()[0]])]
+	else:
+		deletable=list(tupl)
+		shared=list(set.intersection(*[set([(key,i.sitelinks[key]) for key in i.sitelinks]) for i in tupl]))
+		if len(shared)==0:
+			pywikibot.output(u'\03{{lightred}}{items} have no shared sitelinks'.format(items=obj_join(tupl)))
+			return False
+		kept=[item for item in tupl if item.sitelinks==sl]
+		if len(kept)==0:
+			pywikibot.output(u'\03{{lightred}}Conflict detected for {items}\03{{default}}'.format(items=obj_join(tupl),sl=sl))
+			return False
+		kept=kept[0]
+		deletable.remove(kept)
+		pywikibot.output(u'\03{{lightpurple}}{items} have {shared} shared sitelinks, no claims, no descriptions, and no aliases: preparing deletion\03{{default}}'.format(items=obj_join(tupl),shared=len(shared)))
+	shared=obj_join([pywikibot.Link.fromPage(pywikibot.Page(fromDBName(g[0]),g[1])).astext(onsite=item.site.data_repository()) for g in shared])
+	for item in deletable:
+		if False==delete_item(item,kept,msg=u'[[{proj}:True duplicates|True duplicate]] of [[{kept}]] by {shared}'.format(proj=item.site.namespace(4),kept=kept.getID().upper(),shared=shared),allow_sitelinks=True):
+			return False
 	flu(kept)
+	return True
 
 def sort_items(tupl):
 	return sorted(tupl,key=lambda j: int(j.getID().lower().replace('q','')))
 
 def obj_join(args):
-	args=[str(e) for e in args]
+	args=[unicode(e) for e in args]
 	return ', '.join(args[:-2]+[' and '.join(args[-2:])])
 
 def merge_items(tupl,force_lower=True,taxon_mode=True):
@@ -256,33 +282,35 @@ def delete_item(item,other,msg=None,by=site.user(),rfd=False,allow_sitelinks=Fal
 	other.get(force=True)
 	if allow_sitelinks!=True and len(item.sitelinks)>0:
 		error_merge_msg(item,other)
-		return
+		return False
 	if compare(item,other,'sitelinks')==False:
-		return
+		return False
 	if compare(item,other,'labels')==False:
-		return
+		return False
 	if compare(item,other,'descriptions')==False:
-		return
+		return False
 	if by is None:
 		by=item.site.data_repository().user()
 	for key in item.aliases:
 		for alias in item.aliases[key]:
 			if alias.strip()!='' and ((not key in other.aliases) or (not alias in other.aliases[key])):
 				error_merge_msg(item,other)
-				return
+				return False
 	for prop in item.claims:
 		if (not prop in other.claims) or len(list(set([claim.getTarget() for claim in item.claims[prop]])-set([claim.getTarget() for claim in other.claims[prop]]))):
 			error_merge_msg(item,other)
-			return
+			return False
 	if rfd:
 		rfd_page=pywikibot.Page(site,'Requests for deletions',ns=4)
 		rfd_page.get(force=True)
 		rfd_page.text+=u'\n\n{{{{subst:Request for deletion|itemid={qid}|reason={msg}}}}} --~~~~'.format(qid=item.getID(),msg=(msg if msg else u'Merged with {other}{by}'.format(other=other.getID(),by=(u' by [[User:{by}|{by}]]'.format(by=by) if by!=site.user() else ''))))
 		page.save(comment=u'[[Wikidata:Bots|Bot]]: nominating [[{qid}]] for deletion'.format(qid=item.getID().upper()),minor=False,botflag=True)
 		pywikibot.output(u'\03{{lightgreen}}{item} successfully nominated for deletion\03{{default}}'.format(item=item))
+		return True
 	else:
 		item.delete(reason=(msg if msg else u'Merged with [[{qid}]] by [[User:{by}|{by}]]'.format(qid=other.getID().upper(),by=by)))
 		pywikibot.output(u'\03{{lightgreen}}{item} successfully deleted\03{{default}}'.format(item=item))
+		return True
 
 def matchmerge(iterable,**kwargs):
 	for match in iterable:
@@ -318,17 +346,19 @@ if __name__=='__main__':
 			unflood=True
 	site.login()
 	if cat and lang2:
-		site2=pywikibot.Site(lang2,pywikibot.Site().family.name)
-		for page1 in pywikibot.Category(pywikibot.Site(),cat).articles(recurse=recurse,total=total):
+		site1=pywikibot.Site()
+		site2=pywikibot.Site(lang2,site1.family.name)
+		suid=(site1.dbName()=='suwiki' and site2.dbName()=='idwiki')
+		for page1 in pywikibot.Category(site1,cat).articles(recurse=recurse,total=total):
 			t=page1.title()
-			if pywikibot.Site().dbName()=='suwiki' and site2.dbName()=='idwiki':
+			if suid:
 				t=t.replace(u'é',u'e')
 			page2=pywikibot.Page(site2,t)
 			if page2.exists():
 				item1=pywikibot.ItemPage.fromPage(page1)
 				item2=pywikibot.ItemPage.fromPage(page2)
 				if item1!=item2:
-					merge_items((item1,item2))
+					merge_items((item1,item2),taxon_mode=(False if suid else True))
 	elif len(ids)==2:
 		merge_items((pywikibot.ItemPage(site,ids[0]),pywikibot.ItemPage(site,ids[1])))
 	elif len(ids)==1:
@@ -340,7 +370,7 @@ if __name__=='__main__':
 			check_deletable(pywikibot.ItemPage(site,match.group('item')))
 	elif mode=='truedups':# True duplicates
 		text = pywikibot.Page(site,'Byrial/Duplicates',ns=2).get(force=True)
-		regex = re.compile('\*\s*\[\[(?P<item1>[Qq]\d+)\]\] \(1 link\, 0 statements\)\, \[\[(?P<item2>[Qq]\d+)\]\] \(1 link\, 0 statements\)\, duplicate link')
+		regex = re.compile('\*\s*\[\[(?P<item1>[Qq]\d+)\]\] \(\d links\, 0 statements\)\, \[\[(?P<item2>[Qq]\d+)\]\] \(\d links\, 0 statements\)\, duplicate link')
 		for match in regex.finditer(text):
 			duplicates((pywikibot.ItemPage(site,match.group('item1')),pywikibot.ItemPage(site,match.group('item2'))))
 	elif mode=='catitems':# all done
