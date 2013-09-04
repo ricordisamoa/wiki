@@ -123,4 +123,4 @@ tbl+='\n|}'
 
 basepage.text = ''.join(re.split(ur'(=+\s*'+section+'\s*=+\n)',basepage.text)[0:2]) + tbl + ''.join(re.split(ur'(\n<\/center>\n+\{\{[Cc]olonne\}\})',basepage.text)[1:3])
 pywikibot.showDiff(old,basepage.text)
-basepage.save(comment='[[Wikipedia:Bot|Bot]]: aggiornamento automatico classifica',botflag=True)
+basepage.save(comment='[[Wikipedia:Bot|Bot]]: aggiornamento automatico [[#'+section+'|classifica]]',botflag=True)
