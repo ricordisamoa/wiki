@@ -8,11 +8,7 @@ from bs4 import BeautifulSoup
 
 site=pywikibot.Site('it','wikipedia')
 
-def parse_date(text):
-	return pywikibot.data.api.Request(site=site,action='expandtemplates',text='{{#timel:%s}}'%text).submit()['expandtemplates']['*']
-
-fulldate=parse_date('j xg Y')
-daymonth=parse_date('j xg')
+fulldate=pywikibot.data.api.Request(site=site,action='expandtemplates',text='{{#timel:j xg Y}}').submit()['expandtemplates']['*']
 
 today=datetime.date.today()
 
@@ -101,7 +97,7 @@ tbl_head=['!width=7%|']
 for c in comm:
 	tbl_head.append(('!width={}%|'+(u'{{{{Descrizione comando|{}|{}}}}}' if len(c)>2 else '{}')).format(*c))
 
-tbl=u'<small>\'\'Aggiornata al [[{daymonth}]] [[{year}]].\'\'<ref>{{{{cita web|url={baseurl}|titolo=Serie A - Classifica|editore=legaseriea.it|accesso={fulldate}}}}}</ref></small>'.format(baseurl=baseurl,daymonth=daymonth,fulldate=fulldate,year=today.year)
+tbl=u'\'\'Aggiornata al {fulldate}.\'\'<ref>{{{{cita web|url={baseurl}|titolo=Serie A - Classifica|editore=legaseriea.it|accesso={fulldate}}}}}</ref>'.format(baseurl=baseurl,fulldate=fulldate)
 tbl+='\n<center>\n{|'+tbl_style
 tbl+='\n'+'\n'.join(tbl_head)
 
