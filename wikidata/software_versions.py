@@ -18,6 +18,13 @@ items = {
 			lambda x: re.match('latest version (\d+\.\d+(\.\d+)?)$',x.find('div',{'id':'latestversion'}).find('a').text).group(1),
 			StrictVersion
 		)
+	},
+	'Q6410733':{
+		'p348':(
+			'http://kineticjs.com',
+			lambda x: re.match('^(\d+\.\d+\.\d+)$',x.find('div',{'id':'downloadContainer'}).find('a',{'class':'download'}).find('span').text).group(1),
+			StrictVersion
+		)
 	}
 }
 
