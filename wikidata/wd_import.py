@@ -34,6 +34,11 @@ harvesting=[
 				'remove':'itwiki',
 				'filter':[string.strip,'^\d+$']
 			},{
+				'name':'GND',
+				'claims':'p227',
+				'filter':[string.strip,'^(1|10)\d{7}[0-9X]|[47]\d{6}-\d|[1-9]\d{0,7}-[0-9X]|3\d{7}[0-9X]$'],
+				'remove':'itwiki'
+			},{
 				'name':'LCCN',
 				'claims':'p244',
 				'filter':format_lccn,
