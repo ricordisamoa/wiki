@@ -113,6 +113,19 @@ harvesting=[
 				'filter':[string.strip,ur'^\d+$']
 			}
 		]
+	},
+	{
+		'name':[u'WTA'],
+		'sites':['itwiki'],
+		'params':[
+			{
+				'name':['id','1'],
+				'displayed':'WTA',
+				'claims':'p597',
+				'filter':[string.strip,ur'^\d+$'],
+				'remove':'itwiki'
+			}
+		]
 	}
 ]
 
