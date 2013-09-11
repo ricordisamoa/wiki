@@ -9,7 +9,7 @@ from wd_import import from_page as import_from_page
 site = pywikibot.Site('wikidata','wikidata').data_repository()
 site.login()
 
-prop = 'p21'
+prop = 'P21'
 multimode = True # advanced
 
 genders = {
@@ -35,7 +35,7 @@ def log(title,item,text=''):
 	add = u'*{{{{Q|{qid}}}}}'.format(qid=item.getID().replace('q',''))+text
 	if not add in page.text:
 		page.text += '\n'+add
-		page.save(u'[[Wikidata:Bots|Bot]]: [[{qid}]]{text}'.format(qid=item.getID(),text=text),minor=True,botflag=True)
+		page.save(u'[[Wikidata:Bots|Bot]]: [[{qid}]]{text}'.format(qid=item.getID().upper(),text=text),minor=True,botflag=True)
 
 for line in lines:
 	if multimode:
@@ -62,7 +62,7 @@ for line in lines:
 		if re.search(ur'\band\b',item.labels['en']):
 			log('User:SamoaBot/sex doubts',item,u' contains "and" in English label: "{label}"'.format(label=item.labels['en']))
 			continue
-	reference = pywikibot.Claim(site,'p143')
+	reference = pywikibot.Claim(site,'P143')
 	reference.setTarget(personal_name)
 	item.get(force=True)
 	if not prop in item.claims:

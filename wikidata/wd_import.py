@@ -30,17 +30,17 @@ harvesting=[
 		'params':[
 			{
 				'name':'VIAF',
-				'claims':'p214',
+				'claims':'P214',
 				'remove':'itwiki',
 				'filter':[string.strip,'^\d+$']
 			},{
 				'name':'GND',
-				'claims':'p227',
+				'claims':'P227',
 				'filter':[string.strip,'^(1|10)\d{7}[0-9X]|[47]\d{6}-\d|[1-9]\d{0,7}-[0-9X]|3\d{7}[0-9X]$'],
 				'remove':'itwiki'
 			},{
 				'name':'LCCN',
-				'claims':'p244',
+				'claims':'P244',
 				'filter':format_lccn,
 				'remove':'itwiki'
 			}
@@ -52,7 +52,7 @@ harvesting=[
 		'params':[
 			{
 				'name':['Sesso','sesso'],
-				'claims':'p21',
+				'claims':'P21',
 				'filter':[string.strip,string.upper],
 				'map':{
 					'M':pywikibot.ItemPage(wd,'Q6581097'),
@@ -68,7 +68,7 @@ harvesting=[
 			{
 				'name':'1',
 				'displayed':'Botanici',
-				'claims':'p428',
+				'claims':'P428',
 				'filter':ur'^[\w\.\s]+$',
 				'remove':'itwiki'
 			}
@@ -80,12 +80,12 @@ harvesting=[
 		'params':[
 			{
 				'name':'Codice statistico',
-				'claims':'p635',
+				'claims':'P635',
 				'filter':ur'^\d{6}$'
 			},
 			{
 				'name':'Codice catastale',
-				'claims':'p806',
+				'claims':'P806',
 				'filter':ur'^\w\d{3}$'
 			}
 		]
@@ -97,7 +97,7 @@ harvesting=[
 			{
 				'name':'1',
 				'displayed':'WDPA',
-				'claims':'p809',
+				'claims':'P809',
 				'filter':[string.strip,ur'^\d+$']
 			}
 		]
@@ -109,7 +109,7 @@ harvesting=[
 			{
 				'name':'wdpa',
 				'displayed':'WDPA',
-				'claims':'p809',
+				'claims':'P809',
 				'filter':[string.strip,ur'^\d+$']
 			}
 		]
@@ -121,7 +121,7 @@ harvesting=[
 			{
 				'name':['id','1'],
 				'displayed':'WTA',
-				'claims':'p597',
+				'claims':'P597',
 				'filter':[string.strip,ur'^\d+$'],
 				'remove':'itwiki'
 			}
@@ -211,7 +211,7 @@ def from_page(page,import_data=True,remove=False,remove_all_only=True,autosave=F
 									else:
 										claim=pywikibot.Claim(wd,prop)
 										claim.setTarget(value)
-										reference=pywikibot.Claim(wd,'p143')
+										reference=pywikibot.Claim(wd,'P143')
 										reference.setTarget(pywikibot.ItemPage(wd,'Q'+str(reference_sites[page.site.dbName()])))
 										reference.getTarget().get()
 										if not prop in item.claims:

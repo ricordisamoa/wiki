@@ -4,7 +4,7 @@ import re
 import urllib2
 import pywikibot
 
-viaf='p214'
+viaf='P214'
 baseurl='http://viaf.org/viaf/{}'
 regex=ur'http\:\/\/viaf\.org\/viaf\/(\d+)\/?'
 site=pywikibot.Site().data_repository()
