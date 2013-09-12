@@ -15,7 +15,7 @@ site.login()
 enwiki = pywikibot.ItemPage(site,'Q'+str(references.sites['enwiki']))
 enwiki.get()
 
-lines = list(urllib2.urlopen('https://tools.wmflabs.org/magnustools/static_data/people.dates.tab'))
+lines = list(urllib2.urlopen('http://tools.wmflabs.org/magnustools/static_data/people.dates.tab'))
 
 pywikibot.handleArgs()
 
@@ -37,7 +37,7 @@ for line in lines:
 		del_msg(item)
 		continue
 	item.get(force=True)
-	prop=match.group('prop').lower()
+	prop=match.group('prop').upper()
 	date={
 		'time':match.group('time'),
 		'timezone':0,
@@ -46,7 +46,7 @@ for line in lines:
 		'precision':11,
 		'calendarmodel':'http://www.wikidata.org/entity/Q1985727'
 	}
-	summary=u'[[Special:MyLanguage/Wikidata:Bots|Bot]]: importing [[Property:{prop}]] from [[{site}]]'.format(prop=prop.upper(),site=enwiki.getID().upper())
+	summary=u'[[Special:MyLanguage/Wikidata:Bots|Bot]]: importing [[Property:{prop}]] from [[{site}]]'.format(prop=prop,site=enwiki.getID())
 	if not prop in item.claims:
 		params={
 			'action':'wbcreateclaim',
