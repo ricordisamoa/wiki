@@ -126,6 +126,19 @@ harvesting=[
 				'remove':'itwiki'
 			}
 		]
+	},
+	{
+		'name':[u'Scrum'],
+		'sites':['itwiki'],
+		'params':[
+			{
+				'name':['1'],
+				'displayed':'Scrum',
+				'claims':'P858',
+				'filter':[string.strip,ur'^\d+$'],
+				'remove':'itwiki'
+			}
+		]
 	}
 ]
 
@@ -215,15 +228,15 @@ def from_page(page,import_data=True,remove=False,remove_all_only=True,autosave=F
 										reference.setTarget(pywikibot.ItemPage(wd,'Q'+str(reference_sites[page.site.dbName()])))
 										reference.getTarget().get()
 										if not prop in item.claims:
-											item.addClaim(claim)
+											item.addClaim(claim,summary=u'import [[Property:{prop}]] from {site}'.format(prop=prop,site=page.site.dbName()))
 											pywikibot.output(u'\03{{lightgreen}}{qid}: claim successfully added\03{{default}}'.format(qid=item.getID()))
-											claim.addSource(reference,bot=1)
+											claim.addSource(reference,bot=1,summary=u'import [[Property:{prop}]] from {site}'.format(prop=prop,site=page.site.dbName()))
 											pywikibot.output(u'\03{{lightgreen}}{qid}: source "{source}" successfully added\03{{default}}'.format(qid=item.getID(),source=reference.getTarget().labels['en']))
 											item.get(force=True)
 											imported.append(prop)
 										elif prop in item.claims and len(item.claims[prop])==1 and item.claims[prop][0].getTarget()==claim.getTarget():
 											try:
-												item.claims[prop][0].addSource(reference,bot=1)
+												item.claims[prop][0].addSource(reference,bot=1,summary=u'import a source for [[Property:{prop}]] from {site}'.format(prop=prop,site=page.site.dbName()))
 												pywikibot.output(u'\03{{lightgreen}}{qid}: source "{source}" successfully added\03{{default}}'.format(qid=item.getID(),source=reference.getTarget().labels['en']))
 												item.get(force=True)
 												imported.append(prop)
