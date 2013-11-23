@@ -139,6 +139,18 @@ harvesting=[
 				'remove':'itwiki'
 			}
 		]
+	},
+	{
+		'name':[u'Infobox Métier'],
+		'sites':['frwiki'],
+		'params':[
+			{
+				'name':['code ROME'],
+				'displayed':'ROME',
+				'claims':'P867',
+				'filter':[string.strip,ur'^\w\d{4}$']
+			}
+		]
 	}
 ]
 
