@@ -19,14 +19,17 @@ for match in re.finditer(ur'^\*\s*\[\[(?P<item>[Qq]\d+)\]\]\:\s*\['+regex+'\s+\d
 		for claim in item.claims[viaf]:
 			prev=claim.getTarget()
 			url=baseurl.format(prev)
-			got=re.match(regex+'$',urllib2.urlopen(url).geturl()).group(2)
-			if got!=prev:
-				pywikibot.output(u'\03{{lightblue}}searched VIAF for {prev} but got redirected to {got}'.format(prev=prev,got=got))
-				if got in values:
-					pywikibot.output(u'\03{{lightgreen}}claim pertaining to VIAF {prev} is eligible for removal'.format(prev=prev))
-					removable.append(claim)
-				else:
-					pywikibot.output(u'\03{{lightyellow}}VIAF {got} was not found in existing claims, so {prev} cannot be removed'.format(prev=prev,got=got))
+			try:
+				got=re.match(regex+'$',urllib2.urlopen(url).geturl()).group(2)
+				if got!=prev:
+					pywikibot.output(u'\03{{lightblue}}searched VIAF for {prev} but got redirected to {got}'.format(prev=prev,got=got))
+					if got in values:
+						pywikibot.output(u'\03{{lightgreen}}claim pertaining to VIAF {prev} is eligible for removal'.format(prev=prev))
+						removable.append(claim)
+					else:
+						pywikibot.output(u'\03{{lightyellow}}VIAF {got} was not found in existing claims, so {prev} cannot be removed'.format(prev=prev,got=got))
+			except Exception,e:
+				print e
 		if len(removable)>0:
 			s=('' if len(removable)==1 else 's')
 			item.removeClaims(removable,summary='remove redirected VIAF id{s}'.format(s=s))
