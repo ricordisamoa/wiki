@@ -151,6 +151,18 @@ harvesting=[
 				'filter':[string.strip,ur'^\w\d{4}$']
 			}
 		]
+	},
+	{
+		'name':[u'Base Sycomore'],
+		'sites':['frwiki'],
+		'params':[
+			{
+				'name':['1'],
+				'displayed':'Sycomore',
+				'claims':'P1045',
+				'filter':[string.strip,ur'^\d{1,5}$']
+			}
+		]
 	}
 ]
 
@@ -208,7 +220,8 @@ def from_page(page,import_data=True,remove=False,remove_all_only=True,autosave=F
 						can_remove=True
 					for pname in ([param['name']] if isinstance(param['name'],basestring) else param['name']):
 						if template.has_param(pname):
-							rawvalue=value=unicode(template.get(pname).value)
+							rawvalue=unicode(template.get(pname).value)
+							value=rawvalue
 							pywikibot.output(u'\03{lightgreen}%s parameter found in %s: %s\03{default}'%(pname,tname,value))
 							if 'filter' in param:
 								for filtr in (param['filter'] if isinstance(param['filter'],list) else [param['filter']]):
