@@ -185,7 +185,7 @@ def obj_join(args):
 	args=[unicode(e) for e in args]
 	return ', '.join(args[:-2]+[' and '.join(args[-2:])])
 
-def merge_items(tupl,force_lower=True,taxon_mode=True):
+def merge_items(tupl,force_lower=True,taxon_mode=True,api=False):
 	item1,item2 = tupl
 	if force_lower:
 		item1,item2=sort_items((item1,item2))
@@ -212,66 +212,69 @@ def merge_items(tupl,force_lower=True,taxon_mode=True):
 			return
 	else:
 		pywikibot.output(u'\03{lightyellow}Warning: taxon mode disabled\03{default}')
-	new_data={
-		'sitelinks':item1.sitelinks,
-		'labels':item1.labels,
-		'aliases':item1.aliases,
-		'descriptions':item1.descriptions
-	}
-	old_dump=dump(new_data)
-	new_data['sitelinks'].update(item2.sitelinks)
-	new_data['labels'].update(item2.labels)
-	new_data['descriptions'].update(item2.descriptions)
-	for language in item2.aliases:
-		if language in new_data['aliases']:
-			new_data['aliases'][language]=list(set(new_data['aliases'][language]+item2.aliases[language]))
-		else:
-			new_data['aliases'][language]=item2.aliases[language]
-	pywikibot.output(u'\03{lightblue}diff for new_data:\03{lightblue}')
-	pywikibot.showDiff(old_dump,dump(new_data))
-	new_data=clean_data(new_data)
-	empty_data={
-		'sitelinks':item2.sitelinks,
-		'labels':item2.labels,
-		'aliases':item2.aliases,
-		'descriptions':item2.descriptions
-	}
-	old_dump=dump(empty_data)
-	for key in empty_data.keys():
-		empty_data[key]=empty(empty_data[key])
-	pywikibot.output(u'\03{lightblue}diff for empty_data:\03{lightblue}')
-	pywikibot.showDiff(old_dump,dump(empty_data))
-	empty_data=clean_data(empty_data)
-	item2.editEntity(empty_data,summary='moving to [[{item1}]]'.format(item1=item1.getID()))
-	pywikibot.output(u'\03{{lightgreen}}{qid} successfully emptied\03{{lightblue}}'.format(qid=item2.getID()))
-	item1.editEntity(new_data,summary='moved from [[{item2}]]'.format(item2=item2.getID()))
-	pywikibot.output(u'\03{{lightgreen}}{qid} successfully filled\03{{lightblue}}'.format(qid=item1.getID()))
-	item1.get(force=True)
-	item2.get(force=True)
-	for prop in item2.claims:
-		for claim2 in item2.claims[prop]:
-			if prop in item1.claims:
-				for claim1 in item1.claims[prop]:
-					if claim1.getTarget()==claim2.getTarget():
-						for source in claim2.sources:
-							try:
-								claim1.addSource(source,bot=1)
-								pywikibot.output(u'\03{{lightgreen}}imported a source for {propid} into {qid}\03{{lightblue}}'.format(propid=prop,qid=item1.getID()))
-								item1.get(force=True)
-							except:
-								pass
+	if api:
+		item2.mergeInto(item1)
+	else:
+		new_data={
+			'sitelinks':item1.sitelinks,
+			'labels':item1.labels,
+			'aliases':item1.aliases,
+			'descriptions':item1.descriptions
+			}
+		old_dump=dump(new_data)
+		new_data['sitelinks'].update(item2.sitelinks)
+		new_data['labels'].update(item2.labels)
+		new_data['descriptions'].update(item2.descriptions)
+		for language in item2.aliases:
+			if language in new_data['aliases']:
+				new_data['aliases'][language]=list(set(new_data['aliases'][language]+item2.aliases[language]))
 			else:
-				claim=pywikibot.Claim(claim2.site,prop)
-				claim.setTarget(claim2.getTarget())
-				item1.addClaim(claim)
-				pywikibot.output(u'\03{{lightgreen}}imported a claim for {propid} into {qid}\03{{lightblue}}'.format(propid=prop,qid=item1.getID()))
-				for source in claim2.sources:
-					try:
-						claim.addSource(source,bot=1)
-						pywikibot.output(u'\03{{lightgreen}}imported a source for {propid} into {qid}\03{{lightblue}}'.format(propid=prop,qid=item1.getID()))
-						item1.get(force=True)
-					except:
-						pass
+				new_data['aliases'][language]=item2.aliases[language]
+		pywikibot.output(u'\03{lightblue}diff for new_data:\03{lightblue}')
+		pywikibot.showDiff(old_dump,dump(new_data))
+		new_data=clean_data(new_data)
+		empty_data={
+			'sitelinks':item2.sitelinks,
+			'labels':item2.labels,
+			'aliases':item2.aliases,
+			'descriptions':item2.descriptions
+		}
+		old_dump=dump(empty_data)
+		for key in empty_data.keys():
+			empty_data[key]=empty(empty_data[key])
+		pywikibot.output(u'\03{lightblue}diff for empty_data:\03{lightblue}')
+		pywikibot.showDiff(old_dump,dump(empty_data))
+		empty_data=clean_data(empty_data)
+		item2.editEntity(empty_data,summary='moving to [[{item1}]]'.format(item1=item1.getID()))
+		pywikibot.output(u'\03{{lightgreen}}{qid} successfully emptied\03{{lightblue}}'.format(qid=item2.getID()))
+		item1.editEntity(new_data,summary='moved from [[{item2}]]'.format(item2=item2.getID()))
+		pywikibot.output(u'\03{{lightgreen}}{qid} successfully filled\03{{lightblue}}'.format(qid=item1.getID()))
+		item1.get(force=True)
+		item2.get(force=True)
+		for prop in item2.claims:
+			for claim2 in item2.claims[prop]:
+				if prop in item1.claims:
+					for claim1 in item1.claims[prop]:
+						if claim1.getTarget()==claim2.getTarget():
+							for source in claim2.sources:
+								try:
+									claim1.addSource(source,bot=1)
+									pywikibot.output(u'\03{{lightgreen}}imported a source for {propid} into {qid}\03{{lightblue}}'.format(propid=prop,qid=item1.getID()))
+									item1.get(force=True)
+								except:
+									pass
+				else:
+					claim=pywikibot.Claim(claim2.site,prop)
+					claim.setTarget(claim2.getTarget())
+					item1.addClaim(claim)
+					pywikibot.output(u'\03{{lightgreen}}imported a claim for {propid} into {qid}\03{{lightblue}}'.format(propid=prop,qid=item1.getID()))
+					for source in claim2.sources:
+						try:
+							claim.addSource(source,bot=1)
+							pywikibot.output(u'\03{{lightgreen}}imported a source for {propid} into {qid}\03{{lightblue}}'.format(propid=prop,qid=item1.getID()))
+							item1.get(force=True)
+						except:
+							pass
 	delete_item(item2,item1)
 
 def error_merge_msg(item1,item2):
@@ -321,6 +324,7 @@ if __name__=='__main__':
 	total=None
 	bulk=None
 	mode=None
+	api=False
 	unflood=False
 	ids=[]
 	for arg in pywikibot.handleArgs():
@@ -340,6 +344,8 @@ if __name__=='__main__':
 			bulk=True
 		elif arg.startswith('-mode:'):
 			mode=arg[6:]
+		elif arg.startswith('-api'):
+			api=True
 		elif arg.startswith('-unflood'):
 			unflood=True
 	site.login()
@@ -356,9 +362,9 @@ if __name__=='__main__':
 				item1=pywikibot.ItemPage.fromPage(page1)
 				item2=pywikibot.ItemPage.fromPage(page2)
 				if item1.exists() and item2.exists() and item1!=item2:
-					merge_items((item1,item2),taxon_mode=(False if suid else True))
+					merge_items((item1,item2),taxon_mode=(False if suid else True),api=api)
 	elif len(ids)==2:
-		merge_items((pywikibot.ItemPage(site,ids[0]),pywikibot.ItemPage(site,ids[1])))
+		merge_items((pywikibot.ItemPage(site,ids[0]),pywikibot.ItemPage(site,ids[1])),api=api)
 	elif len(ids)==1:
 		check_deletable(pywikibot.ItemPage(site,ids[0]),askip=True)
 	elif bulk:
@@ -375,7 +381,7 @@ if __name__=='__main__':
 	elif mode=='catitems':# all done
 		text = pywikibot.Page(site,'Byrial/Category+name merge/ceb-war-Animalia',ns=2).get(force=True)
 		regex = re.compile('^\*\s*\d+\:([Aa]rticle|[Cc]ategory)\:[\w\s]+\:\s+\[\[\:?(?P<item1>[Qq]\d+)\]\] \[\[\:?(?P<item2>[Qq]\d+)\]\](\n|$)',flags=re.MULTILINE)
-		matchmerge(regex.finditer(text))
+		matchmerge(regex.finditer(text),api=api)
 	elif mode=='shortpages':# ShortPages are often deletable ones
 		gen = pywikibot.pagegenerators.ShortPagesPageGenerator(site=site,number=total)
 		for page in pywikibot.pagegenerators.NamespaceFilterPageGenerator(gen,namespaces=[0]):
@@ -388,11 +394,11 @@ if __name__=='__main__':
 		text = pywikibot.Page(site,u'Bot requests#Merge multiple items',ns=4).get(force=True)
 		regex = re.compile('^\s*\*\s*\[http\:\/\/nssdc\.gsfc\.nasa\.gov\/nmc\/spacecraftDisplay\.do\?id\=[\w\d\-\s]+\]\: \{\{[Qq]\|(?P<item1>\d+)\}\}\, \{\{[Qq]\|(?P<item2>\d+)\}\}',flags=re.MULTILINE)
 		for match in regex.finditer(text):
-			merge_items((pywikibot.ItemPage(site,'Q'+match.group('item1')),pywikibot.ItemPage(site,'Q'+match.group('item2'))),taxon_mode=False)
+			merge_items((pywikibot.ItemPage(site,'Q'+match.group('item1')),pywikibot.ItemPage(site,'Q'+match.group('item2'))),taxon_mode=False,api=api)
 	else:# 'standard' mode
 		text = pywikibot.Page(site,'Soulkeeper/dups',ns=2).get(force=True)
 		regex = re.compile('^\*\s*\w+[\w\s]*\[\[\:?(?P<item1>[Qq]\d+)\]\] \[\[\:?(?P<item2>[Qq]\d+)\]\](\n|$)',flags=re.MULTILINE)
-		matchmerge(regex.finditer(text))
+		matchmerge(regex.finditer(text),api=api)
 	if unflood:
 		site.login(sysop=True)
 		rightstoken=pywikibot.data.api.Request(site=site,action='query',list='users',ususers=site.user(),ustoken='userrights').submit()
