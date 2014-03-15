@@ -311,7 +311,7 @@ def translate(code, xdict, parameters=None, fallback=True):
                 index = plural_rules[code]['plural']
             if index>=len(variants.split('|')):
               index=len(variants.split('|'))-1
-            trans = re.sub(PLURAL_PATTERN, variants.split('|')[index], trans, count = 1)
+            trans = re.sub(PLURAL_PATTERN, variants.split('|')[index], trans, count=1)
     if param:
         try:
             return trans % param
