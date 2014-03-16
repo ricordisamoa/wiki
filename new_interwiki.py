@@ -3,7 +3,7 @@
 import re
 import pywikibot
 from pywikibot import pagegenerators, textlib
-from i18n import translate
+from pywikibot.i18n import translate
 from wikidata_summary import summary as wikidata_summary
 
 class InterwikiBot:
