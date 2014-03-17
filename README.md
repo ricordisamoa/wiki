@@ -1,5 +1,7 @@
 # wiki
 
+[![Build Status](https://api.travis-ci.org/ricordisamoa/wiki.png?branch=master)](https://travis-ci.org/ricordisamoa/wiki)
+
 A collection of scripts assisting with several tasks on Wikimedia Foundation projects.
 
 Most of them require the rewrite branch of the [Pywikipediabot](//www.mediawiki.org/wiki/Manual:Pywikipediabot) framework.
