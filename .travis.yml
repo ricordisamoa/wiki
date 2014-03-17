@@ -5,4 +5,4 @@ python:
 install:
   - pip install pep8
 script:
-  - pep8 *.py
+  - pep8 .

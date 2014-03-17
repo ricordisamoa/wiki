@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- coding: utf-8  -*-
 """
 Copyright (C) 2013 Legoktm & Ricordisamoa
 
@@ -20,28 +20,33 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
 """
-import pywikibot
 import re
+import pywikibot
+
 pywikibot.handleArgs()
-site = pywikibot.Site('wikidata','wikidata').data_repository()
+
+site = pywikibot.Site().data_repository()
 site.login()
 
 user_regex = re.compile('^\*\s*\[\[User\:(?P<name>[^\[\]]+)\]\](\n|$)', flags=re.MULTILINE)
+item_regex = re.compile('== \[\[(?P<qid>Q\d*?)\]\] ==(?P<text>.*?)((?===)|$)', flags=re.DOTALL)
 
 """
 OLD CODE FOR OPT-IN LIST
 
-optin = [x.group('name') for x in user_regex.finditer(pywikibot.Page(site,'User:BeneBot*/RfD-optin#List').get(force=True))]
+optin = pywikibot.Page(site, 'BeneBot*/RfD-optin#List', ns=2).get(force=True)
+optin = [x.group('name') for x in user_regex.finditer(optin)]
 """
 
-optout = [x.group('name') for x in user_regex.finditer(pywikibot.Page(site,'User:BeneBot*/RfD-optout#List').get(force=True))]
+optout = pywikibot.Page(site, 'BeneBot*/RfD-optout#List', ns=2).get(force=True)
+optout = [x.group('name') for x in user_regex.finditer(optout)]
 
-regex = re.compile('== \[\[(?P<qid>Q\d*?)\]\] ==(?P<text>.*?)((?===)|$)', flags=re.DOTALL)
-page = pywikibot.Page(site, 'Wikidata:Requests for deletions')
-text = oldtext = page.get(force=True)
-marked_list = []
-x = list(regex.finditer(text))
-for m in x:
+page = pywikibot.Page(site, 'Requests for deletions', ns=4)
+text = page.get(force=True)
+
+marked = []
+
+for m in item_regex.finditer(text):
     q = pywikibot.ItemPage(site, m.group('qid'))
     print q
     if (not '{{done' in m.group('text').lower() and not '{{deleted' in m.group('text').lower()):
@@ -49,34 +54,36 @@ for m in x:
         deleted = None
         if (not q.exists()):
             deleted = q
-        elif q.exists() and len(list(q.site.logevents(logtype='delete',page=q)))==0:
-            search = re.search(ur'([Dd]ouble with|[Dd]uplicate of|[Mm]erged (to|into|with)) \[\[(?P<qid>[Qq]\d+)\]\]',m.group())
+        elif q.exists() and len(list(q.site.logevents(logtype='delete', page=q))) == 0:
+            search = re.search(ur'([Dd]ouble with|[Dd]uplicate of|[Mm]erged (to|into|with)) \[\[(?P<qid>[Qq]\d+)\]\]', m.group())
             if search:
-                deleted = pywikibot.ItemPage(site,search.group('qid'))
+                deleted = pywikibot.ItemPage(site, search.group('qid'))
         if not deleted:
-            pywikibot.output('no deleted item found, skipping')
+            pywikibot.output(u'no deleted item found, skipping')
             continue
         if deleted and deleted.exists():
-            pywikibot.output('the item still exists, skipping')
+            pywikibot.output(u'the item still exists, skipping')
             continue
-        deleted_log = list(deleted.site.logevents(logtype='delete',page=deleted))
-        if len(deleted_log)!=1:
-            pywikibot.output('\03{lightyellow}deletion log for %s contains %d entries, skipping\03{default}'%(deleted.getID(),len(deleted_log)))
+        deleted_log = list(deleted.site.logevents(logtype='delete', page=deleted))
+        if len(deleted_log) != 1:
+            pywikibot.output(u'\03{lightyellow}deletion log for %s contains %d entries, skipping' % (deleted.getID(), len(deleted_log)))
             continue
         by = deleted_log[0].user()
         if by in optout:
-            pywikibot.output('\03{lightyellow}%s has opted-out, skipping\03{default}'%by)
+            pywikibot.output(u'\03{lightyellow}%s has opted-out, skipping' % by)
             continue
-        addition = ('{{deleted|admin=%s}}' if deleted.getID() == q.getID() else '{{deleted}} the other one by {{user|%s}}')%by
-        pywikibot.output('\03{lightgreen}%s\03{default}'%addition)
-        t = re.sub(ur'\n+$','',t) + '\n:' + addition + ' --~~~~\n'
-        text = text.replace(m.group(), t)
-        marked_list.append(q.getID())
-if len(marked_list)>0:
-    summary = 'Bot: marking %(count)d request{{PLURAL:%(count)d||s}} as deleted'
-    if len(marked_list)==1:
-        summary = '/* %s */ '%marked_list[0].upper() + summary
+        addition = ('{{deleted|admin=%s}}' if deleted.getID() == q.getID() else '{{deleted}} the other one by {{user|%s}}') % by
+        pywikibot.output(u'\03{lightgreen}%s' % addition)
+        t = re.sub(ur'\n+$', '', t) + '\n:' + addition + ' --~~~~\n'
+        page.text = page.text.replace(m.group(), t)
+        marked.append(q.getID())
+if len(marked) > 0:
+    summary = u'Bot: marking %(count)d request{{PLURAL:%(count)d||s}} as deleted'
+    summary = pywikibot.i18n.translate(site, summary, {'count': len(marked)})
+    if len(marked) == 1:
+        summary = u'/* %s */ %s' % (marked[0], summary)
     pywikibot.showDiff(oldtext, text)
-    page.put(text, pywikibot.i18n.translate('en',summary,{'count':len(marked_list)}), minorEdit=True, botflag=True)
+    page.text = text
+    page.put(text, summary, minorEdit=True, botflag=True)
 else:
-    pywikibot.output('\03{lightgreen}no requests to be marked!\03{default}')
+    pywikibot.output(u'\03{lightgreen}no requests to be marked!')
