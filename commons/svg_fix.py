@@ -4,9 +4,9 @@ import re
 import urllib2
 import pywikibot
 
-pywikibot.config.put_throttle=12
+pywikibot.config.put_throttle = 12
 
-site=pywikibot.Site('commons','commons')
+site = pywikibot.Site('commons', 'commons')
 site.login()
 
 #   __          __        _      _____         _____
@@ -18,7 +18,8 @@ site.login()
 #                                                               __/ |
 #                                                              |___/
 
-def fix_image(svg):
-	print ''.join(list(urllib2.urlopen(svg.fileUrl())))
 
-fix_image(pywikibot.ImagePage(site,'2NOGCMOS.svg'))
+def fix_image(svg):
+    print ''.join(list(urllib2.urlopen(svg.fileUrl())))
+
+fix_image(pywikibot.ImagePage(site, '2NOGCMOS.svg'))
