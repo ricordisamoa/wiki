@@ -4,7 +4,7 @@
 
 A collection of scripts assisting with several tasks on Wikimedia Foundation projects.
 
-Most of them require the rewrite branch of the [Pywikipediabot](//www.mediawiki.org/wiki/Manual:Pywikipediabot) framework.
+Most of them require the latest [core branch](//git.wikimedia.org/summary/pywikibot/core.git) of the [Pywikibot](//www.mediawiki.org/wiki/Manual:Pywikibot) framework.
 
 ### add_section.py
 It loops onto a predefined set of `pages` and, if absent, inserts the daily section header with the specified options. Used at the moment in [it:Wikipedia:Vandalismi in corso](//it.wikipedia.org/wiki/Wikipedia:Vandalismi_in_corso) only.
