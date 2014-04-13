@@ -47,7 +47,7 @@ for line in lines:
         'calendarmodel': 'http://www.wikidata.org/entity/Q1985727'
     }
     summary = u'[[Special:MyLanguage/Wikidata:Bots|Bot]]: importing [[Property:{prop}]] from [[{site}]]'.format(prop=prop, site=enwiki.getID())
-    if not prop in item.claims:
+    if prop not in item.claims:
         params = {
             'action': 'wbcreateclaim',
             'entity': item.getID(),

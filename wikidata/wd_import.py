@@ -253,7 +253,7 @@ def from_page(page, import_data=True, remove=False, remove_all_only=True, autosa
                                 pywikibot.output(u'{pname} parameter formatted from {frm} to {to}'.format(pname=pname, frm=rawvalue, to=value))
                             if import_data:
                                 for prop in (param['claims'] if isinstance(param['claims'], list) else [param['claims']]):
-                                    if isinstance(import_data, list) and not prop in import_data:
+                                    if isinstance(import_data, list) and prop not in import_data:
                                         pywikibot.output(u'\03{{lightyellow}}{} claim was to be added but was skipped because it is not whitelisted'.format(prop))
                                     else:
                                         claim = pywikibot.Claim(repo, prop)
@@ -261,7 +261,7 @@ def from_page(page, import_data=True, remove=False, remove_all_only=True, autosa
                                         reference = pywikibot.Claim(repo, 'P143')
                                         reference.setTarget(reference_sites[pag-e.site.dbName()])
                                         reference.getTarget().get()
-                                        if not prop in item.claims:
+                                        if prop not in item.claims:
                                             item.addClaim(claim, summary=u'import [[Property:{prop}]] from {site}'.format(prop=prop, site=page.site.dbName()))
                                             pywikibot.output(u'\03{{lightgreen}}{qid}: claim successfully added'.format(qid=item.getID()))
                                             claim.addSource(reference, bot=1, summary=u'import [[Property:{prop}]] from {site}'.format(prop=prop, site=page.site.dbName()))

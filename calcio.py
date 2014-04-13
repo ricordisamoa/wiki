@@ -185,15 +185,15 @@ def marcatori():
             print nome
             return
         print pl.title(), squadra(pl)
-        #tbl += u'\n{{Classifica marcatori|reti=4|rigori=0|nazione=SVK|nome=[[Marek Hamšík]]|squadra= Napoli|testa=on}}'
+        # tbl += u'\n{{Classifica marcatori|reti=4|rigori=0|nazione=SVK|nome=[[Marek Hamšík]]|squadra= Napoli|testa=on}}'
 
-#marcatori()
+# marcatori()
 sezione_squadre = u'Classifica'
-#sezione_marcatori = u'Classifica marcatori'
+# sezione_marcatori = u'Classifica marcatori'
 basepage = pywikibot.Page(site, title)
 text = basepage.get(force=True)
 basepage.text = ''.join(re.split(ur'(=+\s*'+sezione_squadre+'\s*=+\n)', basepage.text)[0:2]) + squadre() + ''.join(re.split(ur'(\n<\/center>\n+\{\{[Cc]olonne\}\})', basepage.text)[1:3])
-#basepage.text = ''.join(re.split(ur'(=+\s*'+sezione_marcatori+'\s*=+\n)', basepage.text)[0:2]) + marcatori() + ''.join(re.split(ur'(\n<\/center>\n+\{\{[Cc]olonne\}\})', basepage.text)[1:3])
+# basepage.text = ''.join(re.split(ur'(=+\s*'+sezione_marcatori+'\s*=+\n)', basepage.text)[0:2]) + marcatori() + ''.join(re.split(ur'(\n<\/center>\n+\{\{[Cc]olonne\}\})', basepage.text)[1:3])
 
 pywikibot.showDiff(text, basepage.text)
 basepage.save(comment='[[Wikipedia:Bot|Bot]]: aggiornamento automatico [[#'+sezione_squadre+'|classifica]]', botflag=True)

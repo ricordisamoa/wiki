@@ -41,13 +41,13 @@ def main(site1=pywikibot.Site('fy', 'wikipedia'), site2=pywikibot.Site('nl', 'wi
         if not item1.exists():
             newdata['sitelinks'] = {}
             newdata['sitelinks'][site1.dbName()] = {'site': site1.dbName(), 'title': page1.title()}
-            if not site1.lang in item2.labels:
+            if site1.lang not in item2.labels:
                 newdata['labels'] = {}
                 newdata['labels'][site1.lang] = {'language': site1.lang, 'value': page1.title()}
         for dbname in item2.sitelinks:
             s = pywikibot.Site(dbname.replace('wiki', '').replace('_', '-'), 'wikipedia')  # hack
-            if not s.lang in item2.labels:
-                if not 'labels' in newdata:
+            if s.lang not in item2.labels:
+                if 'labels' not in newdata:
                     newdata['labels'] = {}
                 newdata['labels'][s.lang] = {'language': s.lang, 'value': item2.sitelinks[dbname]}
         if len(newdata) > 0:

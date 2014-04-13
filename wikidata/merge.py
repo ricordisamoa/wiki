@@ -117,7 +117,7 @@ def check_deletable(item, safe=True, askip=False):
     elif len(history) == 2:
         prev = json.loads(history[1][3])
         cur = json.loads(history[0][3])
-        if 'links' in prev and len(prev['links']) == 1 and (len(cur['links']) == 0 or not 'links' in cur):
+        if 'links' in prev and len(prev['links']) == 1 and (len(cur['links']) == 0 or 'links' not in cur):
             removed_link = pywikibot.Link(prev['links'][prev['links'].keys()[0]]['name'], fromDBName(prev['links'].keys()[0]))
             removed_page = pywikibot.Page(removed_link)
             moved_into = pywikibot.ItemPage.fromPage(removed_page)
@@ -309,11 +309,11 @@ def delete_item(item, other, msg=None, by=site.user(), rfd=False, allow_sitelink
         by = item.site.data_repository().user()
     for key in item.aliases:
         for alias in item.aliases[key]:
-            if alias.strip() != '' and ((not key in other.aliases) or (not alias in other.aliases[key])):
+            if alias.strip() != '' and ((key not in other.aliases) or (alias not in other.aliases[key])):
                 error_merge_msg(item, other)
                 return False
     for prop in item.claims:
-        if (not prop in other.claims) or len(list(set([claim.getTarget() for claim in item.claims[prop]])-set([claim.getTarget() for claim in other.claims[prop]]))):
+        if (prop not in other.claims) or len(list(set([claim.getTarget() for claim in item.claims[prop]])-set([claim.getTarget() for claim in other.claims[prop]]))):
             error_merge_msg(item, other)
             return False
     if rfd:

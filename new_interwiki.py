@@ -157,7 +157,7 @@ def treat(page, comment):
             for p in toImport:
                 data['sitelinks'].append({'site': p.site.dbName(), 'title': p.title()})
                 lng = lang(p)
-                if not lng in importInto.labels:
+                if lng not in importInto.labels:
                     data['labels'].append({'language': lng, 'value': intelLabel(importInto, p)})
             summary = pywikibot.i18n.translate(importInto.site, import_summary,
                                                {'sitelinks': u', '.join(dbNames[:-2] + [u' and '.join(dbNames[-2:])]),

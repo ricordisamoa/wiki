@@ -35,7 +35,7 @@ def log(title, item, text=''):
     page = pywikibot.Page(site, title)
     page.get(force=True)
     add = u'*{{{{Q|{qid}}}}}'.format(qid=item.getID().replace('Q', ''))+text
-    if not add in page.text:
+    if add not in page.text:
         page.text += '\n'+add
         page.save(u'[[Wikidata:Bots|Bot]]: [[{qid}]]{text}'.format(qid=item.getID().upper(), text=text), minor=True, botflag=True)
 
@@ -69,7 +69,7 @@ for line in lines:
     reference = pywikibot.Claim(site, 'P143')
     reference.setTarget(personal_name)
     item.get(force=True)
-    if not prop in item.claims:
+    if prop not in item.claims:
         claim = pywikibot.Claim(site, prop)
         claim.setTarget(gender)
         item.addClaim(claim)

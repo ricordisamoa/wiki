@@ -34,13 +34,13 @@ def do_item(item):
                     pywikibot.output(u'\03{{lightyellow}}Warning: {page1} redirects to {target}, which does not have a linked item'.format(page1=f, target=target))
                 else:
                     nd['sitelinks'][dbname] = {'site': dbname, 'title': f.title()}
-                    if not 'sitelinks' in removed_from:
+                    if 'sitelinks' not in removed_from:
                         removed_from.append('sitelinks')
-                    if (not s.lang in item.labels) or item.labels[s.lang] == t or item.labels[s.lang] == b.title():
+                    if (s.lang not in item.labels) or item.labels[s.lang] == t or item.labels[s.lang] == b.title():
                         nd['labels'][s.lang] = {'language': s.lang, 'value': f.title()}
-                        if s.lang in item.labels and (not 'labels' in removed_from):
+                        if s.lang in item.labels and 'labels' not in removed_from:
                             removed_from.append('labels')
-        elif not s.lang in item.labels:
+        elif s.lang not in item.labels:
             nd['labels'][s.lang] = {'language': s.lang, 'value': b.title()}
     if len(nd['sitelinks']) == 0 and len(nd['labels']) == 0:
         pywikibot.output(u'\03{{lightblue}}{}: nothing to update'.format(item))
