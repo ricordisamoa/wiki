@@ -3,12 +3,26 @@
 import re
 from operator import itemgetter
 import pywikibot
-from pywikibot import output, pagegenerators, textlib
-from pywikibot.i18n import translate
+from pywikibot import pagegenerators, textlib
+import mwparserfromhell
 from wikidata_summary import summary as wikidata_summary
 
 import_summary = {
     'en': u'import %(sitelinks)s sitelink{{PLURAL:%(count)d||s}} from %(source)s'
+}
+
+# language codes for which the WMF version differs from the correct one
+labels = {
+    'no': 'nb',
+    'als': 'gsw',
+    'fiu-vro': 'vro',
+    'bat-smg': 'sgs',
+    'be-x-old': 'be-tarask',
+    'roa-rup': 'rup',
+    'zh-classical': 'lzh',
+    'zh-min-nan': 'nan',
+    'zh-yue': 'yue',
+    'crh': 'crh-latn'
 }
 
 
@@ -22,18 +36,50 @@ class InterwikiBot:
         for page in self.generator:
             treat(page, comment=self.comment)
             if self.linked:
-                treated = [page]
-                for ll in [pywikibot.Page(ll) for ll in page.langlinks()]:
-                    if ll.site.username() and ll not in treated:
+                try:
+                    for ll in [pywikibot.Page(ll) for ll in page.langlinks() if ll.site.username()]:
                         treat(ll, comment=self.comment)
-                        treated.append(ll)
+                except Exception, e:
+                    pywikibot.warning(e)
+
+
+def interProjectLinks(page):
+    config = {
+        'itwiki': {
+            'prefixes': ['q', 's', 'voy'],
+            'remove': ['q', 's', 'voy']
+        },
+        'itwikiquote': {
+            'prefixes': ['w', 's', 'voy']
+        }
+    }
+    if page.site.dbName() in config:
+        for template in mwparserfromhell.parse(page.text).ifilter_templates():
+            if template.name[0].upper() + template.name[1:] in [u'Ip', u'Interprogetto']:
+                prefixes = config[page.site.dbName()]['prefixes']
+                for param in template.params:
+                    if unicode(param.value).strip() != '':
+                        if unicode(param.name).isnumeric():
+                            if unicode(param.value) in prefixes:
+                                yield pywikibot.Page(page.site, unicode(param.value) + ':' + page.title())
+                        elif unicode(param.name) in prefixes:
+                            lang = (unicode(template.get(unicode(param.name) + '_site').value) + ':') if template.has(unicode(param.name) + '_site') else ''
+                            yield pywikibot.Page(page.site, unicode(param.name) + ':' + lang + unicode(param.value))
+
+
+def lang(page):
+    l = page.site.lang
+    if l in labels:
+        l = labels[l]
+    return l
 
 
 def intelLabel(item, page):
-    priority = ('wikipedia', 'wikivoyage', 'wikisource', 'commons')
+    # set of sites to get the label from
+    priority = ('wikipedia', 'wikivoyage', 'wikiquote', 'wikisource', 'commons')
     l = []
     for sl in item.iterlinks():
-        if sl.site.lang == page.site.lang and sl.site.family.name in priority:
+        if lang(sl) == lang(page) and sl.site.family.name in priority:
             l.append((priority.index(sl.site.family.name), sl.title()))
     l.append((priority.index(page.site.family.name) if page.site.family.name in priority else (len(priority) + 1), page.title()))
     l = sorted(l, key=itemgetter(0))
@@ -42,62 +88,91 @@ def intelLabel(item, page):
 
 def treat(page, comment):
     pywikibot.output(u'\n\n>>> \03{{lightpurple}}{}\03{{default}} <<<'.format(page.title(asLink=True)))
+    if page.isRedirectPage():
+        treat(page.getRedirectTarget(), comment)
+        return
     try:
         text = page.get(force=True)
     except Exception, e:
-        pywikibot.output(e)
+        pywikibot.warning(e)
         return
-    toImport = []
+
     toRemove = []
     importInto = pywikibot.ItemPage.fromPage(page)
-    if not importInto.exists():
-        items = {}
-    else:
-        items = None
+    items = None
+    if importInto.exists():
         importInto.get(force=True)
+    else:
+        # possible targets of link import
+        items = {}
+
+    # import interlanguage links
     langlinks = textlib.getLanguageLinks(page.text, insite=page.site)
-    for site, langlink in langlinks.iteritems():
-        langlinkItem = pywikibot.ItemPage.fromPage(langlink)
-        if items is not None and langlinkItem.exists():
-            if langlinkItem.getID() in items:
-                items[langlinkItem.getID()] += 1
-            else:
-                items[langlinkItem.getID()] = 1
-        if importInto.exists():
-            if not site.dbName() in importInto.sitelinks:
-                toImport.append(langlink)
-            elif langlink.site.sametitle(importInto.sitelinks[site.dbName()], langlink.title()) or \
-            (langlink.exists() and langlink.isRedirectPage() and langlink.getRedirectTarget() == pywikibot.Page(site, importInto.sitelinks[site.dbName()])):
-                toRemove.append(langlink)
-            else:
-                output(u'\03{lightred}interwiki conflict!')
-                return
-        elif not page in toImport:
-            toImport.append(page)
+    toImport = langlinks.copy()
+    toImport[page.site] = page
+
+    # import interproject links
+    iws = list(set(interProjectLinks(page)))
+    for iw in iws:
+        if True not in [iw != i and i.site == iw.site for i in iws]:
+            toImport[iw.site] = iw
+
+    for site, link in toImport.iteritems():
+        if link.isRedirectPage():
+            toImport[site] = link.getRedirectTarget()
+
     if items is not None:
+        for site, link in toImport.iteritems():
+            linkItem = pywikibot.ItemPage.fromPage(link)
+            if linkItem.exists():
+                if linkItem.getID() in items:
+                    items[linkItem.getID()] += 1
+                else:
+                    items[linkItem.getID()] = 1
         if len(items) > 0:
+            # select the most appropriate item
             items = list(sorted(items.keys(), key=items.__getitem__))
             importInto = pywikibot.ItemPage(page.site.data_repository(), items[-1])
-        else:
-            importInto = None
-    if len(toImport) > 0:
-        if importInto and importInto.exists():
-            toImport = [sitelink for sitelink in toImport if canImport(importInto, sitelink)]
-            if len(toImport) > 0:
-                dbNames = [p.site.dbName() for p in toImport]
-                data = {'sitelinks': [], 'labels': []}
-                for p in toImport:
-                    data['sitelinks'].append({'site': p.site.dbName(), 'title': p.title()})
-                    if not p.site.lang in importInto.labels:
-                        data['labels'].append({'language': p.site.lang, 'value': intelLabel(importInto, p)})
-                summary = translate(importInto.site, import_summary,
-                                    {'sitelinks': u', '.join(dbNames[:-2] + [u' and '.join(dbNames[-2:])]),
-                                     'count': len(dbNames),
-                                     'source': page.site.dbName()
-                                     })
-                importInto.editEntity(data, summary=summary)
-                treat(page=page, comment=comment)
+            importInto.get(force=True)
+    if importInto is None or not importInto.exists():
+        pywikibot.warning(u'no data item to import sitelinks into')
         return
+    for site, langlink in langlinks.iteritems():
+        if site.dbName() in importInto.sitelinks:
+            try:
+                if langlink.site.sametitle(importInto.sitelinks[site.dbName()], langlink.title()) or (
+                   langlink.exists() and langlink.isRedirectPage() and langlink.getRedirectTarget().exists() and langlink.getRedirectTarget() == pywikibot.Page(site, importInto.sitelinks[site.dbName()])):
+                    toRemove.append(langlink)
+                else:
+                    pywikibot.error(u'interwiki conflict: {} != {}'.format(langlink.title(), importInto.sitelinks[site.dbName()]))
+                    return
+            except Exception, e:
+                pywikibot.warning(e)
+    toImport = [sitelink for site, sitelink in toImport.iteritems() if sitelink.site.dbName() not in importInto.sitelinks or importInto.sitelinks[sitelink.site.dbName()] != sitelink.title()]
+    if len(toImport) > 0:
+        toImport = [sitelink for sitelink in toImport if canImport(importInto, sitelink)]
+        if len(toImport) > 0:
+            dbNames = [p.site.dbName() for p in toImport]
+            data = {'sitelinks': [], 'labels': []}
+            for p in toImport:
+                data['sitelinks'].append({'site': p.site.dbName(), 'title': p.title()})
+                lng = lang(p)
+                if not lng in importInto.labels:
+                    data['labels'].append({'language': lng, 'value': intelLabel(importInto, p)})
+            summary = pywikibot.i18n.translate(importInto.site, import_summary,
+                                               {'sitelinks': u', '.join(dbNames[:-2] + [u' and '.join(dbNames[-2:])]),
+                                                'count': len(dbNames),
+                                                'source': page.site.dbName()
+                                                })
+            try:
+                importInto.editEntity(data, summary=summary)
+                pywikibot.output(u'\03{{lightgreen}}successfully imported {} sitelinks and {} labels'.format(len(data['sitelinks']), len(data['labels'])))
+            except Exception, e:
+                pywikibot.warning(e)
+                return
+            treat(page=page, comment=comment)
+        return
+    toRemove = [link for link in toRemove if link.site.family == page.site.family]
     if len(toRemove) > 0:
         counter = 0
         for langlink in toRemove:
@@ -110,57 +185,76 @@ def treat(page, comment):
             page.text = text
             if comment is None:
                 try:
-                    comment = translate(page.site, wikidata_summary[0],
-                                        {'counter': counter,
-                                         'id': importInto.getID(),
-                                         'user': page.site.user()
-                                         })
+                    comment = pywikibot.i18n.translate(page.site, wikidata_summary[0],
+                                                       {'counter': counter,
+                                                        'id': importInto.getID(),
+                                                        'user': page.site.user()
+                                                        })
                 except IndexError:
                     try:
-                        comment = translate(page.site, wikidata_summary[0],
-                                            {'counter': counter,
-                                             'id': importInto.getID()
-                                             })
+                        comment = pywikibot.i18n.translate(page.site, wikidata_summary[0],
+                                                           {'counter': counter,
+                                                            'id': importInto.getID()
+                                                            })
                     except Exception, e:
-                        pywikibot.output(e)
+                        pywikibot.warning(e)
                         return
-            page.save(comment=comment, botflag=True, minor=True)
+            try:
+                page.save(comment=comment, botflag=True, minor=True)
+            except Exception, e:
+                pywikibot.warning(e)
         else:
-            output(u'\03{{lightred}}{} interwikis were to be removed but '
-                   u'only {} were removed'.format(len(toRemove), counter))
+            pywikibot.error(u'{} interwikis were to be removed but only {} were removed'.format(len(toRemove), counter))
 
 
 def canImport(item, sitelink):
     item.get()
-    if not sitelink.exists():
-        return False
-    if sitelink.isTalkPage():
-        return False
-    if sitelink.section() is not None:
-        return False
-    if sitelink.site.dbName() in item.sitelinks:
-        return False
-    if pywikibot.ItemPage.fromPage(sitelink).exists():
-        return False
-    # prevents connecting a disambiguation page to a non-disambiguation item
-    # and viceversa
-    if isDisambig(item) != sitelink.isDisambig():
-        return False
-    if sitelink.site.family.name not in ['wikipedia', 'wikiquote'] and isPerson(item) != isPerson(sitelink):
-        return False
-    # articles to galleries
-    # project pages, templates, help pages and categories to self
-    # https://www.wikidata.org/wiki/Wikidata:Requests_for_comment/Commons_links
-    if sitelink.site.dbName() == 'commonswiki':
-        if sitelink.namespace() in [0, 4, 10, 12, 14]:
-            if isPerson(item):
-                return False
-            for page in item.iterlinks():
-                if page.namespace() != sitelink.namespace():
-                    return False
-        elif not isPerson(sitelink):
+    try:
+        # otherwise it will throw an API error
+        if not sitelink.exists():
             return False
-    return True
+        if sitelink.isTalkPage():
+            return False
+        # interwikis containing section links cannot be imported
+        # and are often source of conflicts
+        if sitelink.section() is not None:
+            return False
+        if sitelink.site.dbName() in item.sitelinks:
+            return False
+        if pywikibot.ItemPage.fromPage(sitelink).exists():
+            return False
+        # prevents connecting a disambiguation page to a non-disambiguation item
+        if isDisambig(item) != sitelink.isDisambig():
+            return False
+        # a category to a non-category
+        if isCategory(item) != sitelink.isCategory():
+            return False
+        # a template to a non-template
+        if isTemplate(item) != isTemplate(sitelink):
+            return False
+        # a project page to a non-project page
+        if isProjectPage(item) != isProjectPage(sitelink):
+            return False
+        # a person to a non-person
+        if sitelink.site.family.name not in ['wikipedia', 'wikiquote'] and isPerson(item) != isPerson(sitelink):
+            return False
+        # special cases for Commons:
+        # articles to galleries;
+        # project pages, templates, help pages and categories to self:
+        # https://www.wikidata.org/wiki/Wikidata:Requests_for_comment/Commons_links
+        if sitelink.site.dbName() == 'commonswiki':
+            if sitelink.namespace() in [0, 4, 10, 12, 14]:
+                if isPerson(item):
+                    return False
+                for page in item.iterlinks():
+                    if page.namespace() != sitelink.namespace():
+                        return False
+            elif not isPerson(sitelink):
+                return False
+        return True
+    except Exception, e:
+        pywikibot.warning(e)
+        return False
 
 
 def allcase(string):
@@ -215,6 +309,26 @@ def isDisambig(item):
     for page in item.iterlinks():
         if page.isDisambig():
             return True
+    return False
+
+
+def isCategory(item):
+    return isInstanceOf(item, 'Q4167836')
+
+
+def isTemplate(arg):
+    if isinstance(arg, pywikibot.page.ItemPage):
+        return isInstanceOf(arg, 'Q11266439')
+    elif isinstance(arg, pywikibot.page.Page):
+        return arg.namespace() == 10
+    return False
+
+
+def isProjectPage(arg):
+    if isinstance(arg, pywikibot.page.ItemPage):
+        return isInstanceOf(arg, 'Q14204246')
+    elif isinstance(arg, pywikibot.page.Page):
+        return arg.namespace() == 4
     return False
 
 
