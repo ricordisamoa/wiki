@@ -15,16 +15,6 @@ def del_msg(item):
         pywikibot.output(u'{} does not exist'.format(item))
 
 
-def flu(pages):
-    if not isinstance(pages, list):
-        pages = [pages]
-    pywikibot.output(u'flu: '+unicode(pages))
-    try:
-        pywikibot.data.api.Request(site=pages[0].site, action='purge', forcelinkupdate=1, titles='|'.join([x.title() for x in pages])).submit()
-    except Exception, e:
-        print e
-
-
 def dump(xdict):
     lines = []
     maxlen = max([len(key) for key in xdict.keys()])
@@ -186,7 +176,7 @@ def duplicates(tupl, force_lower=True):
     for item in deletable:
         if False == delete_item(item, kept, msg=u'[[{proj}:True duplicates|True duplicate]] of [[{kept}]] by {shared}'.format(proj=item.site.namespace(4), kept=kept.getID(), shared=shared), allow_sitelinks=True):
             return False
-    flu(kept)
+    kept.purge(forcelinkupdate=True)
     return True
 
 
