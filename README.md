@@ -17,3 +17,9 @@ Written in Italian for the [Italian Wikipedia](//it.wikipedia.org), it searches 
 
 ### fp_notice.py
 From an [idea](//it.wikipedia.org/wiki/Discussioni_progetto:Coordinamento/Immagini#Migliorare_la_qualit.C3.A0_delle_immagini_presenti_nelle_voci_usando_quelle_gi.C3.A0_selezionate_da_Commons) of [Marcok](//it.wikipedia.org/wiki/Utente:Marcok), it checks for Wikimedia Commons [Featured Pictures](//commons.wikimedia.org/wiki/COM:FP) that are used in English articles but not in their Italian versions, and logs them in a user subpage.
+
+### new_interwiki.py
+Bot to migrate interwiki links from WMF sites into Wikidata.
+
+### riconferma.py
+Handles annual reconfirmations of administrator rights on the Italian Wikipedia.
