@@ -54,13 +54,13 @@ class RugbyBot(Bot):
         code = mwparserfromhell.parse(page.text)
         sections = code.get_sections(levels=weblinks[0], flat=True, include_lead=False,
                                      include_headings=True)
+        removed = []
         for section in sections:
             try:
                 heading = section.filter_headings()[0]
             except IndexError:
                 # a non-lead section must have a heading
                 return
-            removed = []
             first_tmp = None
             section_found = False
             if heading.title.strip() == weblinks[1]:
@@ -75,13 +75,21 @@ class RugbyBot(Bot):
                     if tname == unified:
                         return  # unified template already present
                     if tname in tmps:
-                        if len(template.params) == 0 and len(tmps[tname]) > 1 and tmps[tname][1] is not None:
+                        if len(tmps[tname]) > 1 and tmps[tname][1] is not None:
+                            prop = tmps[tname][1]
                             item = pywikibot.ItemPage.fromPage(page)
-                            item.get()
-                            if tmps[tname][1] not in item.claims:
-                                pywikibot.warning(u'no claims found for {}'.format(tmps[tname][1]))
+                            if not item.exists():
+                                pywikibot.warning(u'no item found for {}'.format(page))
                                 return
-                        elif len(template.params) > 1 or not template.has('1'):
+                            item.get()
+                            if prop not in item.claims:
+                                pywikibot.warning(u'no claims found for {}'.format(prop))
+                                return
+                            if template.has('1') and (len(item.claims[prop]) != 1 or
+                                                      item.claims[prop][0].getTarget() != template.get('1').strip()):
+                                pywikibot.warning(u'the {} claim does not match the parameter'.format(prop))
+                                return
+                        elif len(template.params) != 1 or not template.has('1'):
                             pywikibot.warning(u'invalid parameter(s) found in {}'.format(tname))
                             return
                         if len(tmps[tname]) > 1 and tmps[tname][0] is None:
