@@ -103,7 +103,11 @@ class RugbyBot(Bot):
                             template.name = unified + '\n '
                             first_tmp = template
                         else:
+                            after = code.get(code.index(template) + 1)
                             code.remove(template)
+                            if isinstance(after, mwparserfromhell.nodes.text.Text) and \
+                               unicode(after).startswith('\n'):
+                                code.replace(after, unicode(after)[1:])
                         if equiv:
                             first_tmp.add(*equiv, preserve_spacing=False)
                             for index, param in enumerate(first_tmp.params):
@@ -112,9 +116,6 @@ class RugbyBot(Bot):
                                               ('' if index == len(first_tmp.params) - 1 else ' ')
         removed = [tmp_link(page.site, name) for name in set(removed)]
         new = unicode(code)
-        if new != page.text:
-            # hackish
-            new = re.sub(u'\}\}\n{' + unicode(len(removed) - 1) + ',}', u'}}\n\n\n', new)
         comment = i18n.translate(page.site.lang,
                                  {'it': u'unione di %(templates)s in %(into)s'},
                                  {'templates': page.site.list_to_text(removed),
