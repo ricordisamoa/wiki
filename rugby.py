@@ -114,6 +114,8 @@ class RugbyBot(Bot):
                                 # enforce spacing conventions
                                 param.value = ' ' + param.value.strip() + '\n' + \
                                               ('' if index == len(first_tmp.params) - 1 else ' ')
+                if first_tmp and len(first_tmp.params) == 0:
+                    first_tmp.name = first_tmp.name.strip()
         removed = [tmp_link(page.site, name) for name in set(removed)]
         new = unicode(code)
         comment = i18n.translate(page.site.lang,
