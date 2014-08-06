@@ -14,7 +14,6 @@ You can use any typical pagegenerator to provide with a list of pages.
 
 """
 
-import re
 from operator import attrgetter
 import pywikibot
 from pywikibot import i18n, pagegenerators, Bot
@@ -69,7 +68,6 @@ class RugbyBot(Bot):
                     pywikibot.warning(u'multiple sections are named "{}"'.format(weblinks))
                     return
                 section_found = True
-                old_section = unicode(section)
                 for template in section.ifilter_templates():
                     tname = template.name.strip()
                     tname = tname[0].upper() + tname[1:]
