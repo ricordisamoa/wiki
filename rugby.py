@@ -15,6 +15,7 @@ You can use any typical pagegenerator to provide with a list of pages.
 """
 
 import re
+from operator import attrgetter
 import pywikibot
 from pywikibot import i18n, pagegenerators, Bot
 import mwparserfromhell
@@ -103,19 +104,40 @@ class RugbyBot(Bot):
                             template.name = unified + '\n '
                             first_tmp = template
                         else:
-                            after = code.get(code.index(template) + 1)
+                            while True:
+                                before = code.get(code.index(template) - 1)
+                                if '\n' in before:
+                                    if not before.rstrip(' ').endswith('\n'):
+                                        pywikibot.warning(u'unexpected character(s) before template: "{}"'.format(before))
+                                        return
+                                    break
+                                if before.strip() in ('', '*'):
+                                    code.remove(before)
+                                else:
+                                    pywikibot.warning(u'unexpected character(s) before template: "{}"'.format(before))
+                                    return
+                            try:
+                                after = code.get(code.index(template) + 1)
+                                if isinstance(after, mwparserfromhell.nodes.text.Text) and \
+                                   unicode(after).startswith('\n'):
+                                    code.replace(after, unicode(after)[1:])
+                                else:
+                                    pywikibot.warning(u'unexpected character(s) after template: "{}"'.format(after))
+                                    return
+                            except IndexError:
+                                pass
                             code.remove(template)
-                            if isinstance(after, mwparserfromhell.nodes.text.Text) and \
-                               unicode(after).startswith('\n'):
-                                code.replace(after, unicode(after)[1:])
                         if equiv:
                             first_tmp.add(*equiv, preserve_spacing=False)
-                            for index, param in enumerate(first_tmp.params):
-                                # enforce spacing conventions
-                                param.value = ' ' + param.value.strip() + '\n' + \
-                                              ('' if index == len(first_tmp.params) - 1 else ' ')
-                if first_tmp and len(first_tmp.params) == 0:
-                    first_tmp.name = first_tmp.name.strip()
+
+                if first_tmp:
+                    if len(first_tmp.params) == 0:
+                        first_tmp.name = first_tmp.name.strip()
+                    first_tmp.params.sort(key=attrgetter('name'))  # sort params by name
+                    for index, param in enumerate(first_tmp.params):
+                        # enforce spacing conventions
+                        param.value = ' ' + param.value.strip() + '\n' + \
+                                      ('' if index == len(first_tmp.params) - 1 else ' ')
         removed = [tmp_link(page.site, name) for name in set(removed)]
         new = unicode(code)
         comment = i18n.translate(page.site.lang,
