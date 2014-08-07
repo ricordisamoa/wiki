@@ -55,17 +55,16 @@ class RugbyBot(Bot):
         sections = code.get_sections(levels=weblinks[0], flat=True, include_lead=False,
                                      include_headings=True)
         removed = []
+        section_found = False
         for section in sections:
-            try:
-                heading = section.filter_headings()[0]
-            except IndexError:
+            headings = section.filter_headings()
+            if len(headings) == 0:
                 # a non-lead section must have a heading
                 return
             first_tmp = None
-            section_found = False
-            if heading.title.strip() == weblinks[1]:
+            if weblinks[1] in [headings.title.strip() for heading in headings]:
                 if section_found:
-                    pywikibot.warning(u'multiple sections are named "{}"'.format(weblinks))
+                    pywikibot.warning(u'multiple sections are named "{}"'.format(weblinks[1]))
                     return
                 section_found = True
                 for template in section.ifilter_templates():
@@ -81,13 +80,14 @@ class RugbyBot(Bot):
                                 pywikibot.warning(u'no item found for {}'.format(page))
                                 return
                             item.get()
-                            if prop not in item.claims:
-                                pywikibot.warning(u'no claims found for {}'.format(prop))
-                                return
-                            if template.has('1') and (len(item.claims[prop]) != 1 or
-                                                      item.claims[prop][0].getTarget() != template.get('1').strip()):
-                                pywikibot.warning(u'the {} claim does not match the parameter'.format(prop))
-                                return
+                            if template.has('1'):
+                                if prop not in item.claims:
+                                    pywikibot.warning(u'no claims found for {}'.format(prop))
+                                    return
+                                if len(item.claims[prop]) != 1 or \
+                                   item.claims[prop][0].getTarget() != template.get('1').strip():
+                                    pywikibot.warning(u'the {} claim does not match the parameter'.format(prop))
+                                    return
                         elif len(template.params) != 1 or not template.has('1'):
                             pywikibot.warning(u'invalid parameter(s) found in {}'.format(tname))
                             return
@@ -155,6 +155,7 @@ if __name__ == "__main__":
 
     gen = genFactory.getCombinedGenerator()
     if gen:
+        gen = pagegenerators.PreloadingGenerator(gen)
         bot = RugbyBot(gen)
         bot.run()
     else:
