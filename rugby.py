@@ -62,7 +62,7 @@ class RugbyBot(Bot):
                 # a non-lead section must have a heading
                 return
             first_tmp = None
-            if weblinks[1] in [headings.title.strip() for heading in headings]:
+            if weblinks[1] in [heading.title.strip() for heading in headings]:
                 if section_found:
                     pywikibot.warning(u'multiple sections are named "{}"'.format(weblinks[1]))
                     return
@@ -73,6 +73,9 @@ class RugbyBot(Bot):
                     if tname == unified:
                         return  # unified template already present
                     if tname in tmps:
+                        if len(template.params) == 2 and template.has('2') and \
+                           page.title().startswith(template.get('2').strip()):
+                            template.remove('2', keep_field=False)
                         if len(tmps[tname]) > 1 and tmps[tname][1] is not None:
                             prop = tmps[tname][1]
                             item = pywikibot.ItemPage.fromPage(page)
