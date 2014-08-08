@@ -31,6 +31,7 @@ tmps = {
     'Statistiche British Lions':       ['British Lions'],
     'Statistiche Barbarian francesi':  ['Barbarian francesi'],
     'Statistiche Pro12':               ['Pro12'],
+    'Statistiche Celtic League':       ['Pro12'],
     'ErcRugby':                        ['ErcRugby'],
     'Scheda ItsRugby':                 ['ItsRugby'],
     'Statistiche English Premiership': [None, 'P861'],
@@ -71,7 +72,11 @@ class RugbyBot(Bot):
                     tname = template.name.strip()
                     tname = tname[0].upper() + tname[1:]
                     if tname == unified:
-                        return  # unified template already present
+                        first_tmp = template
+                        break  # unified template already present
+                for template in section.ifilter_templates():
+                    tname = template.name.strip()
+                    tname = tname[0].upper() + tname[1:]
                     if tname in tmps:
                         if len(template.params) == 2 and template.has('2') and \
                            page.title().startswith(template.get('2').strip()):
