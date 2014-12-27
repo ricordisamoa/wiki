@@ -1,86 +1,141 @@
 # -*- coding: utf-8  -*-
 
 import re
-import calendar
 import datetime
 import pywikibot
+from pywikibot import Bot, NoPage, IsRedirectPage
 
-pages = {
-    'wikipedia': {
-        'it': 'Wikipedia:Wikipediani/Per giorno di nascita'
-    },
-    'wikinews': {
-        'it': 'Wikinotizie:Wikinotiziani/Compleanno'
+
+class CompleannoBot(Bot):
+
+    """Bot to wish users a happy birthday."""
+
+    pages = {
+        'wikipedia': {
+            'it': 'Wikipedia:Wikipediani/Per giorno di nascita'
+        },
+        'wikinews': {
+            'it': 'Wikinotizie:Wikinotiziani/Compleanno'
+        }
     }
-}
 
+    message = u'\n\n== Auguri{post} ==\nBuon compleanno! <small class="{tag}">' \
+              u'&nbsp;&nbsp;&ndash; Messaggio automatico ([[{source}|fonte]] | ' \
+              u'[[{{{{subst:ns:3}}}}:{{{{subst:REVISIONUSER}}}}|è sbagliato?]]) di</small> ~~~~'
 
-def main(site=None, basedate=datetime.date.today(), back=0, forward=0):
-    if site is None:
-        site = pywikibot.Site()
-    if not site.logged_in():
-        site.login()
-    for date in [basedate+datetime.timedelta(days=num) for num in range(-back, forward+1)]:
-        post = (' in anticipo' if date > datetime.date.today() else (' in ritardo' if date < datetime.date.today() else ''))
-        mese = site.months_names()[date.month][0]
-        tag = 'bot-compleanno-auguri-' + str(date.year)
-        compleanni = pywikibot.Page(site, pages[site.family.name][site.lang]+'#'+mese[0].upper()+mese[1:])
-        pywikibot.output(u'Sto cercando gli utenti di %s nati il giorno %d %s' % (site.sitename(), date.day, mese))
-        utenti = re.search(ur"\*\s*'*\[\["+str(date.day)+" "+mese+"\]\]'*\s*(\:|\-)\s*(?P<utenti>[^\n]+)\n", compleanni.get()).group('utenti')
-        regex = ur'\[\[\s*([Uu]ser|['+re.escape(site.namespace(2)[0].upper()+site.namespace(2)[0].lower())+']'+re.escape(site.namespace(2)[1:])+')\:(?P<nome>[^\|\{\}\[\]]+)(\]\]|\|[^\]]+\]\])'
-        utenti = list(set([pywikibot.User(site, link.group('nome')) for link in re.finditer(regex, utenti)]))
-        if len(utenti) == 0:
-            pywikibot.output('\03{lightyellow}non ci sono utenti con i criteri cercati')
-            return
-        pywikibot.output(u'Invierò gli auguri a \03{lightblue}%s' % (('\03{default}, \03{lightblue}'.join([utente.name() for utente in utenti[0:-1]])+'\03{default} e \03{lightblue}'+utenti[-1].name()) if len(utenti) > 1 else utenti[0].name()))
-        for utente in utenti:
-            yellow = u'\03{lightblue}'+utente.name()+'\03{default}: \03{lightyellow}%s'
-            if not utente.isRegistered():
-                pywikibot.output(yellow % 'il nome utente non risulta registrato')
+    def __init__(self, site, **kwargs):
+        """Initialize and configure the bot object."""
+        self.availableOptions.update({
+            'basedate': datetime.date.today(),
+            'page': None,
+            'back': 0,
+            'forward': 0,
+        })
+        super(CompleannoBot, self).__init__(**kwargs)
+        self.site = site
+        if not self.getOption('page'):
+            self.options['page'] = self.pages[self.site.family.name][self.site.lang]
+        self.comment = u'[[{ns}:Bot|Bot]]: auguri di compleanno{{post}}'.format(
+            ns=self.site.namespace(4))
+        user_namespaces = [u'[' + re.escape(ns[0].upper() + ns[0].lower()) + u']' +
+                           re.escape(ns[1:])
+                           for ns in self.site.namespaces[2]]
+        self.regex = re.compile(u'\[\[\s*(' + u'|'.join(user_namespaces) +
+                                u')\:(?P<nome>[^\|\{\}\[\]]+)(\]\]|\|[^\]]+\]\])')
+
+    @staticmethod
+    def format_user(user):
+        return u'\03{{lightblue}}{name}\03{{default}}'.format(
+            name=user.name())
+
+    def run(self):
+        """Wish a happy birthday to every user that was born within the selected range."""
+        if not self.site.logged_in():
+            self.site.login()
+        for date in [self.getOption('basedate') + datetime.timedelta(days=num)
+                     for num in range(-self.getOption('back'), self.getOption('forward') + 1)]:
+            if date > datetime.date.today():
+                post = ' in anticipo'
+            elif date < datetime.date.today():
+                post = ' in ritardo'
+            else:
+                post = ''
+            mese = self.site.months_names[date.month - 1][0]
+            tag = u'bot-compleanno-auguri-{anno}'.format(anno=date.year)
+            compleanni = pywikibot.Page(self.site, '%s#%s%s' % (self.getOption('page'), mese[0].upper(), mese[1:]))
+            giorno = u'{giorno} {mese}'.format(giorno=date.day, mese=mese)
+            pywikibot.output(u'Sto cercando gli utenti di {sito} nati il giorno {giorno}'.format(
+                sito=self.site, giorno=giorno))
+            utenti = re.search(ur"\*\s*'*\[\[" + giorno + "\]\]'*\s*(\:|\-)\s*(?P<utenti>[^\n]+)\n", compleanni.get())
+            if not utenti:
+                pywikibot.warning('sezione giornaliera "{giorno}" non trovata'.format(giorno=giorno))
                 continue
-            if utente.isBlocked(force=True):
-                pywikibot.output(yellow % 'l\'utente risulta bloccato')
+            utenti = list(set(pywikibot.User(self.site, link.group('nome'))
+                              for link in self.regex.finditer(utenti.group('utenti'))))
+            if len(utenti) == 0:
+                pywikibot.output('non ci sono utenti con i criteri cercati')
                 continue
-            if not utente.getUserPage().exists():
-                pywikibot.output(yellow % 'la pagina utente non esiste')
-                continue
-            if utente.getUserPage().isRedirectPage():
-                pywikibot.output(yellow % 'la pagina utente è un redirect')
-                continue
-            discussione = utente.getUserTalkPage()
-            if not discussione.exists():
-                pywikibot.output(yellow % 'la pagina di discussioni non esiste')
-                continue
-            if discussione.isRedirectPage():
-                pywikibot.output(yellow % 'la pagina di discussioni è un redirect')
-                continue
-            disc = discussione.get(force=True)
-            if disc.find(tag) != -1:
-                pywikibot.output(u'\03{lightblue}%s\03{default}: \03{lightgreen}gli auguri sono già stati inviati' % utente.name())
-                continue
-            discussione.text += u'\n\n== Auguri{post} ==\nBuon compleanno! <small class="{tag}">&nbsp;&nbsp;&ndash; Messaggio automatico ' \
-                                u'([[{source}|fonte]] | [[{talk}|è sbagliato?]]) di</small> ~~~~'.format(post=post,
-                                                                                                          tag=tag,
-                                                                                                          source=compleanni.title(),
-                                                                                                          talk=pywikibot.User(site, site.user()).getUserTalkPage().title())
-            pywikibot.showDiff(disc, discussione.text)
-            discussione.save(comment='[['+site.namespace(4)+':Bot|Bot]]: auguri'+post, minor=False)
+            nomi = [self.format_user(utente) for utente in utenti]
+            pywikibot.output(u'Invierò gli auguri a {nomi}'.format(nomi=self.site.list_to_text(nomi)))
+            for utente in utenti:
+                fmt = u'{utente}: %s'.format(utente=self.format_user(utente))
+                if not utente.isRegistered():
+                    pywikibot.warning(fmt % 'il nome utente non risulta registrato')
+                    continue
+                if utente.isBlocked(force=True):
+                    pywikibot.warning(fmt % 'l\'utente risulta bloccato')
+                    continue
+                if not utente.getUserPage().exists():
+                    pywikibot.warning(fmt % 'la pagina utente non esiste')
+                    continue
+                if utente.getUserPage().isRedirectPage():
+                    pywikibot.warning(fmt % 'la pagina utente è un redirect')
+                    continue
+                discussione = utente.getUserTalkPage()
+                try:
+                    disc = discussione.get(force=True)
+                except (NoPage, IsRedirectPage) as e:
+                    pywikibot.warning(e)
+                    continue
+                if disc.find(tag) != -1:
+                    pywikibot.output(fmt % u'\03{lightgreen}gli auguri sono già stati inviati')
+                    continue
+                discussione.text += self.message.format(post=post, tag=tag, source=compleanni.title())
+                self.userPut(discussione, disc, discussione.text,
+                             minor=False,  # trigger the 'new message' flag
+                             comment=self.comment.format(post=post))
         pywikibot.output(u'\03{lightgreen}completato')
 
-if __name__ == "__main__":
+
+def main(*args):
+    """
+    Process command line arguments and invoke bot.
+
+    If args is an empty list, sys.argv is used.
+
+    @param args: command line arguments
+    @type args: list of unicode
+    """
     today = datetime.date.today()
     day = today.day
     month = today.month
     year = today.year
-    back = 0
-    forward = 0
-    for arg in pywikibot.handleArgs():
+    options = {}
+    for arg in pywikibot.handle_args(args):
         if arg.startswith('-day:'):
             day = int(arg[5:])
         elif arg.startswith('-month:'):
             month = int(arg[7:])
+        elif arg.startswith('-page:'):
+            options['page'] = arg[6:]
         elif arg.startswith('-back:'):
-            back = int(arg[6:])
+            options['back'] = int(arg[6:])
         elif arg.startswith('-forward:'):
-            forward = int(arg[9:])
-    main(basedate=datetime.date(year, month, day), back=back, forward=forward)
+            options['forward'] = int(arg[9:])
+    options['basedate'] = datetime.date(year, month, day)
+    bot = CompleannoBot(site=pywikibot.Site(), **options)
+    bot.run()
+
+
+if __name__ == '__main__':
+    main()
