@@ -39,6 +39,11 @@ mappings = [
                 'claims': 'P244',
                 'filters': [format_lccn],
                 'remove': ['itwiki']
+            }, {
+                'names': ['SBN'],
+                'claims': 'P396',
+                'filters': [unicode.strip, '^IT\\\\ICCU\\\\(\d{10}|\D\D[\D\d]\D\\\\\d{6})$'],
+                'remove': ['itwiki']
             }
         ]
     },
