@@ -1,8 +1,10 @@
 # -*- coding: utf-8  -*-
 """
-This script can remove old templates for line numbers embedded in <poem> tags,
-auto-detecting the appropriate numbering scheme for each poetry block.
-It requires the mwparserfromhell library.
+Script to convert old line numbering templates to attributes of <poem> tags.
+
+It can auto-detect the appropriate numbering scheme for each <poem> block
+and remove templates that were used to achieve the same effect.
+The mwparserfromhell library is required.
 
 ------------------------------------------------------------------------------
 
@@ -26,10 +28,40 @@ from pywikibot import i18n, pagegenerators, Bot
 import mwparserfromhell
 
 
+class PoemError(pywikibot.Error):
+
+    """Basic class for PoemBot-specific errors."""
+
+    def __init__(self, message, *args, **kwargs):
+        """
+        Constructor.
+
+        @param message: message for the exception
+        @type message: basestring
+        """
+        self.message = message.format(*args, **kwargs)
+        super(PoemError, self).__init__(self.message)
+
+
 class PoemBot(Bot):
+
+    """Bot to migrate old line templates to the new format."""
+
+    line_tmps = {
+        'wikisource': {
+            'it': ('R',)
+        }
+    }
+
+    summary = {
+        'en': u'automatic line numbering in <poem> tag',
+        'it': u'numerazione versi automatica in tag <poem>',
+    }
+
     def __init__(self, generator, **kwargs):
+        """Initialize and configure the bot object."""
         self.availableOptions.update({
-            'tags':  ['poem'],
+            'tags':  set(['poem']),
             'preferred': None,
             'summary': None,
         })
@@ -38,93 +70,98 @@ class PoemBot(Bot):
         self.generator = generator
 
         pref = self.getOption('preferred')
-        if pref and pref not in self.getOption('tags'):
-            self.getOption('tags').append(pref)
+        if pref:
+            self.getOption('tags').add(pref)
 
-        self.line_tmps = {
-            'wikisource': {
-                'it': ('R')
-            }
-        }
-
-        self.summary = {
-            'en': u'automatic line numbering in <poem> tag',
-            'it': u'numerazione versi automatica in tag <poem>',
-        }
-
-    def run(self):
-        for page in self.generator:
-            self.treat(page)
-
-    def detect_numbering(self, nums):
+    @staticmethod
+    def detect_numbering(nums, lines_count):
         """
-        Tries to detect the line numbering scheme from the given markers.
+        Try to detect the line numbering scheme from the given markers.
+
+        @param nums: markers
+        @type nums: int[]
+        @param lines_count: total number of lines in the poem block
+        @type lines_count: int
         """
         if len(set(nums)) != len(nums):
             return
-        mode = None
+        step = None
         for i, num in enumerate(nums[1:]):
-            current = num - nums[i]
-            if mode:
-                if current != mode:
+            current_step = num - nums[i]
+            if step:
+                if current_step != step:
                     return
             else:
-                mode = current
-        return {'number-step': mode}
+                step = current_step
+        if step:
+            data = {'number-step': step}
+            if nums[0] != 1:
+                data['number-start'] = nums[0]
+            if lines_count - nums[-1] > step:
+                data['number-end'] = nums[-1]
+            return data
 
-    def process_lines(self, page, lines):
+    def process_lines(self, lines):
+        """
+        Remove old templates from lines and obtain line numbers.
+
+        @param lines: the lines to clean up
+        @type lines: unicode
+        @return: cleaned-up lines and line numbers
+        @rtype: tuple containing a unicode and a list of ints
+        """
         ln = 0
         numbering = []
         lines = lines.split('\n')
+        tmps = i18n.translate(self.current_page.site, self.line_tmps, fallback=False)
         for i, line in enumerate(lines):
             if line.strip() != '':
                 ln += 1
                 code = mwparserfromhell.parse(line)
                 for tmp in code.ifilter_templates():
-                    if tmp.name.strip() not in i18n.translate(page.site, self.line_tmps, fallback=False):
+                    if tmp.name.strip() not in tmps:
                         pywikibot.warning(u'unexpected template: "{}"'.format(tmp.name))
                         continue
                     if ln in numbering:
-                        pywikibot.warning(u'exceeding template: "{}"'.format(tmp.name))
-                        return
+                        raise PoemError(u'exceeding template: "{}"', tmp.name)
                     params = [param for param in tmp.params if tmp.has(param.name, True)]
                     if len(params) == 0:
-                        pywikibot.warning(u'no parameters found in "{}"'.format(tmp.name))
-                        return
+                        raise PoemError(u'no parameters found in "{}"', tmp.name)
                     if len(params) > 1:
-                        pywikibot.warning(u'multiple parameters found in "{}"'.format(tmp.name))
-                        return
+                        raise PoemError(u'multiple parameters found in "{}"', tmp.name)
                     if params[0].name.strip() != '1':
-                        pywikibot.warning(u'unexpected parameter: "{}" in "{}"'.format(params[0].name, tmp.name))
-                        return
+                        raise PoemError(u'unexpected parameter: "{}" in "{}"', params[0].name, tmp.name)
                     if params[0].value.strip() != unicode(ln):
-                        pywikibot.warning(u'unexpected line marker: "{}" in "{}"'.format(params[0].value, tmp.name))
-                        return
-                    if params[0].value.strip() != unicode(ln):
-                        pywikibot.warning(u'unexpected line marker: "{}" in "{}"'.format(params[0].value, tmp.name))
-                        return
+                        raise PoemError(u'unexpected line marker: "{}" in "{}"', params[0].value, tmp.name)
                     if line.rstrip()[-len(unicode(tmp)):] != unicode(tmp):
-                        pywikibot.warning(u'the "{}" template is not at the end of the line'.format(tmp.name))
-                        return
+                        raise PoemError(u'the "{}" template is not at the end of the line', tmp.name)
                     line = line.rstrip()[:-len(unicode(tmp))]
                     line = line.rstrip()  # possibly breaking change
                     lines[i] = line
                     numbering.append(ln)
-        return '\n'.join(lines), numbering
+        return '\n'.join(lines), numbering, len(lines)
 
     def treat(self, page):
         """
-        Loads the given page, makes the required changes, and saves it.
+        Load the given page, make the required changes, and save it.
+
+        @param page: the page to treat
+        @type page: pywikibot.Page
         """
+        self.current_page = page
         page.get()
         wikicode = mwparserfromhell.parse(page.text)
         for el in wikicode.ifilter_tags():
             if el.tag in self.getOption('tags'):
-                result = self.process_lines(page, el.contents)
+                try:
+                    result = self.process_lines(el.contents)
+                except PoemError as e:
+                    pywikibot.warning(e)
+                    continue
                 if result:
-                    lines, numbering = result
+                    lines, numbering, lines_count = result
                     if lines != el.contents:
-                        scheme = self.detect_numbering(numbering)
+                        scheme = self.detect_numbering(numbering, lines_count)
                         if scheme:
                             el.contents = lines
                             for attr, val in scheme.items():
@@ -141,19 +178,28 @@ class PoemBot(Bot):
         self.userPut(page, page.text, newtext, comment=summary)
 
 
-if __name__ == "__main__":
+def main(*args):
+    """
+    Process command line arguments and invoke bot.
+
+    If args is an empty list, sys.argv is used.
+
+    @param args: command line arguments
+    @type args: list of unicode
+    """
     options = {}
-    local_args = pywikibot.handleArgs()
+    local_args = pywikibot.handle_args(args)
     genFactory = pagegenerators.GeneratorFactory()
 
     for arg in local_args:
         if genFactory.handleArg(arg):
             continue
-        if arg.startswith('-'):
-            if ':' in arg:
-                options[arg[1:].split(':', 1)[0].lower()] = arg[1:].split(':', 1)[1]
-            else:
-                options[arg[1:].lower()] = True
+        if arg.startswith('-preferred:'):
+            options['preferred'] = arg[11:]
+        elif arg.startswith('-summary:'):
+            options['summary'] = arg[9:]
+        elif arg == '-always':
+            options['always'] = True
 
     gen = genFactory.getCombinedGenerator()
     if gen:
@@ -161,3 +207,7 @@ if __name__ == "__main__":
         bot.run()
     else:
         pywikibot.showHelp()
+
+
+if __name__ == '__main__':
+    main()
