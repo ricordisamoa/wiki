@@ -1,6 +1,7 @@
 # -*- coding: utf-8  -*-
 
 import re
+import pywikibot
 
 
 def format_lccn(prev):
@@ -19,6 +20,8 @@ def format_lccn(prev):
         return prev
     return None
 
+
+repo = pywikibot.site.DataSite('wikidata', 'wikidata')
 
 mappings = [
     {
@@ -56,8 +59,8 @@ mappings = [
                 'claims': 'P21',
                 'filters': [unicode.strip, unicode.upper],
                 'map': {
-                    'M': None,  # pywikibot.ItemPage(repo, 'Q6581097'),
-                    'F': None,  # pywikibot.ItemPage(repo, 'Q6581072')
+                    'M': pywikibot.ItemPage(repo, 'Q6581097'),
+                    'F': pywikibot.ItemPage(repo, 'Q6581072')
                 }
             }
         ]
