@@ -44,7 +44,7 @@ class BadgesBot(Bot):
 
     summary = {
         'en': u'%(templates)s from Wikidata',
-        'it': u'%(templates)s non più necessari grazie a Wikidata',
+        'it': u'%(templates)s non più necessari{{PLURAL:%(count)d|o|}} grazie a Wikidata',
     }
 
     def __init__(self, **kwargs):
@@ -132,10 +132,11 @@ class BadgesBot(Bot):
         if not summary:
             tmps = ['{{[[Template:%(tmp)s|%(tmp)s]]}}' % {'tmp': tmp}
                     for tmp in sorted(tmps)]
-            summary = i18n.translate(page.site,
-                                     self.summary,
-                                     {'templates': page.site.list_to_text(tmps)},
-                                     fallback=True)
+            params = {
+                'templates': page.site.list_to_text(tmps),
+                'count': len(tmps)
+            }
+            summary = i18n.translate(page.site, self.summary, params, fallback=True)
         self.userPut(page, page.text, newtext, comment=summary)
 
 
