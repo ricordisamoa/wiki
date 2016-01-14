@@ -1,6 +1,6 @@
 # wiki
 
-[![Build Status](https://api.travis-ci.org/ricordisamoa/wiki.png?branch=master)](https://travis-ci.org/ricordisamoa/wiki)
+[![Build Status](https://travis-ci.org/ricordisamoa/wiki.svg?branch=master)](https://travis-ci.org/ricordisamoa/wiki)
 
 A collection of scripts assisting with several tasks on Wikimedia Foundation projects.
 
