@@ -339,7 +339,7 @@ def main():
     for arg in pywikibot.handleArgs():
         if arg.startswith('-comment'):
             if len(arg) == 8:
-                self.comment = pywikibot.input(u'What comment do you want to use?')
+                comment = pywikibot.input(u'What comment do you want to use?')
             else:
                 comment = arg[9:]
         elif arg.startswith('-linked'):
